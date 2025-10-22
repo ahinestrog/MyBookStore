@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package payment;
+option go_package = "github.com/ahinestrog/mybookstore/proto/gen/payment;paymentpb";
+
+import "common.proto";
+
+// Payment funciona por eventos; exponemos un RPC para consultar estado opcional.
+service Payment {
+  rpc GetPaymentStatus(GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
+}
+
+enum PaymentState {
+  PAYMENT_STATE_UNSPECIFIED = 0;
+  PAYMENT_STATE_PENDING = 1;
+  PAYMENT_STATE_SUCCEEDED = 2;
+  PAYMENT_STATE_FAILED = 3;
+}
+
+message GetPaymentStatusRequest {
+  int64 order_id = 1;
+}
+
+message GetPaymentStatusResponse {
+  int64 order_id = 1;
+  PaymentState state = 2;
+  string provider_ref = 3; // id de pago simulado
+  int64 updated_unix = 4;
+}

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package common;
+option go_package = "github.com/ahinestrog/mybookstore/proto/gen/common;commonpb";
+
+// Representa dinero en centavos para evitar errores de punto flotante.
+message Money {
+  int64 cents = 1; // p.ej. 12345 = 123.45
+}
+
+// Requests de paginación muy simples.
+message PageRequest {
+  int32 page = 1;       // desde 1
+  int32 page_size = 2;  // p.ej. 20
+}
+
+message PageResponse {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_pages = 3;
+  int64 total_items = 4;
+}
+
+// Identificadores comunes.
+message UserRef { int64 user_id = 1; }
+message BookRef { int64 book_id = 1; }
+message OrderRef { int64 order_id = 1; }
+
+// Para respuestas simples de “ok”.
+message Ack {
+  bool ok = 1;
+  string message = 2;
+}

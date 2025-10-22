@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package order;
+option go_package = "github.com/ahinestrog/mybookstore/proto/gen/order;orderpb";
+
+import "common.proto";
+
+service Order {
+  // Toma el carrito del usuario, calcula total y crea la orden.
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+
+  // Consulta estado actual de la orden.
+  rpc GetOrderStatus(GetOrderStatusRequest) returns (GetOrderStatusResponse);
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_CREATED = 1;   // recién creada, esperando reserva/cobro
+  ORDER_STATUS_PAID = 2;      // cobrada (y stock confirmado)
+  ORDER_STATUS_CANCELLED = 3; // cancelada por usuario o fallo
+  ORDER_STATUS_FAILED = 4;    // falló proceso backend
+}
+
+message OrderItem {
+  int64 book_id = 1;
+  string title = 2;
+  int32 qty = 3;
+  common.Money unit_price = 4;
+  common.Money line_total = 5;
+}
+
+message CreateOrderRequest {
+  int64 user_id = 1;
+}
+
+message CreateOrderResponse {
+  int64 order_id = 1;
+  OrderStatus status = 2;      // normalmente CREATED
+  repeated OrderItem items = 3;
+  common.Money total = 4;
+}
+
+message GetOrderStatusRequest {
+  int64 order_id = 1;
+}
+
+message GetOrderStatusResponse {
+  int64 order_id = 1;
+  OrderStatus status = 2;
+  common.Money total = 3;
+  int64 updated_unix = 4;
+}

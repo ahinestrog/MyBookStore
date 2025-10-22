@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package inventory;
+option go_package = "github.com/ahinestrog/mybookstore/proto/gen/inventory;inventorypb";
+
+import "common.proto";
+
+// Aunque Inventory trabaja por eventos, dejamos un RPC mínimo de consulta.
+service Inventory {
+  rpc GetAvailability(GetAvailabilityRequest) returns (GetAvailabilityResponse);
+}
+
+enum ReservationState {
+  RESERVATION_STATE_UNSPECIFIED = 0;
+  RESERVATION_STATE_RESERVED = 1;
+  RESERVATION_STATE_CONFIRMED = 2;
+  RESERVATION_STATE_RELEASED = 3;
+  RESERVATION_STATE_FAILED = 4;
+}
+
+message GetAvailabilityRequest {
+  repeated int64 book_ids = 1;
+}
+
+message StockItem {
+  int64 book_id = 1;
+  int32 available_qty = 2;
+}
+
+message GetAvailabilityResponse {
+  repeated StockItem items = 1;
+}
