@@ -1,0 +1,16 @@
+:root { --bg:#0b0d12; --fg:#e6ebf2; --muted:#a6b0c3; --card:#141926; --acc:#6aa0ff; --err:#ff6a6a; }
+*{box-sizing:border-box} body{margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui,Segoe UI,Roboto}
+a{color:var(--acc); text-decoration:none}
+header{padding:1rem 0; border-bottom:1px solid #233}
+header h1{margin:.2rem 0; font-size:1.3rem}
+header nav a{margin-right:1rem}
+.container{max-width:900px; margin:0 auto; padding:0 1rem}
+.card{background:var(--card); padding:1rem; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.2); margin:1.2rem 0}
+label{display:block; margin:.7rem 0}
+input[type=number]{width:220px; padding:.5rem .6rem; border-radius:10px; border:1px solid #2a3347; background:#0e1420; color:var(--fg)}
+button,.btn{display:inline-block; padding:.55rem .9rem; border:0; border-radius:12px; background:var(--acc); color:#081019; font-weight:600; cursor:pointer}
+.error{color:var(--err); background:#3a1111; border:1px solid #5c1b1b; padding:.6rem .8rem; border-radius:10px}
+table{width:100%; border-collapse:collapse; margin-top:.6rem}
+th,td{padding:.45rem .6rem; border-bottom:1px solid #243042}
+td.num{text-align:right}
+.foot{opacity:.7; padding:2rem 0}

@@ -1,0 +1,40 @@
+{{ define "title" }}Crear orden · MyBookStore{{ end }}
+{{ define "content" }}
+<section class="card">
+  <h2>Crear orden</h2>
+  <form method="post" action="/create">
+    <label>Usuario (user_id)
+      <input type="number" name="user_id" min="1" required placeholder="e.g. 1">
+    </label>
+    <button type="submit">Crear</button>
+  </form>
+
+  {{ if .Error }}
+    <p class="error">⚠ {{ .Error }}</p>
+  {{ end }}
+
+  {{ if .Created }}
+  <hr>
+  <h3>Orden creada</h3>
+  <p><strong>ID:</strong> {{ .OrderID }}</p>
+  <p><strong>Estado:</strong> {{ .Status }}</p>
+  <p><strong>Total:</strong> {{ .Total }}</p>
+
+  <table>
+    <thead><tr><th>Libro</th><th>Cant</th><th>Unit</th><th>Subtotal</th></tr></thead>
+    <tbody>
+    {{ range .Items }}
+      <tr>
+        <td>{{ .Title }}</td>
+        <td class="num">{{ .Qty }}</td>
+        <td class="num">{{ .Unit }}</td>
+        <td class="num">{{ .Line }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+
+  <p><a class="btn" href="/status?order_id={{ .OrderID }}">Ver estado</a></p>
+  {{ end }}
+</section>
+{{ end }}

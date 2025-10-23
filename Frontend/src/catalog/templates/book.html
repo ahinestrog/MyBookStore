@@ -1,0 +1,21 @@
+{{define "title"}}{{.Book.Title}} – MyBookStore{{end}}
+{{define "content"}}
+<article class="detail">
+  <div class="detail-cover">
+    <img src="{{.Book.CoverUrl}}" alt="Portada">
+  </div>
+  <div class="detail-info">
+    <h1>{{.Book.Title}}</h1>
+    <p class="author">por {{.Book.Author}}</p>
+    <p class="price">{{call .FormatCOP .Book.Price.Cents}}</p>
+    <div class="actions">
+      <form action="/cart/add" method="post">
+        <input type="hidden" name="book_id" value="{{.Book.Id}}">
+        <button class="btn">Añadir al carrito</button>
+      </form>
+    </div>
+    <p class="meta">Publicado: {{.Book.CreatedUnix}}</p>
+    <p class="back"><a href="javascript:history.back()">← Volver</a></p>
+  </div>
+</article>
+{{end}}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario - MyBookStore</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>📦 Panel de Inventario</h1>
+    <nav>
+      <a href="/catalog">Catálogo</a>
+      <a href="/cart">Carrito</a>
+      <a href="/inventory" class="active">Inventario</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="search">
+      <h2>Consultar Disponibilidad</h2>
+      <p>Ingresa los IDs de libros separados por coma (ej: <code>1,2,3</code>)</p>
+      <form id="inventoryForm">
+        <input type="text" id="bookIds" placeholder="IDs de libros..." required>
+        <button type="submit">Consultar</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Resultados</h2>
+      <table id="results">
+        <thead>
+          <tr>
+            <th>ID Libro</th>
+            <th>Cantidad Disponible</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- dinámico -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 MyBookStore</p>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("inventoryForm");
+      const tbody = document.querySelector("#results tbody");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const ids = document.getElementById("bookIds").value.trim();
+        if (!ids) return alert("Por favor ingresa IDs.");
+
+        try {
+          const resp = await fetch("/api/inventory?ids=" + encodeURIComponent(ids));
+          if (!resp.ok) throw new Error("Error en servidor");
+          const data = await resp.json();
+          render(data.items || []);
+        } catch (err) {
+          console.error(err);
+          alert("Error al consultar inventario.");
+        }
+      });
+
+      function render(items) {
+        tbody.innerHTML = "";
+        if (items.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='3'>Sin resultados</td></tr>";
+          return;
+        }
+
+        for (const it of items) {
+          const st = it.available_qty > 5 ? "ok" : it.available_qty > 0 ? "low" : "out";
+          const row = `
+            <tr>
+              <td>${it.book_id}</td>
+              <td>${it.available_qty}</td>
+              <td class="status-${st}">${statusText(st)}</td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        }
+      }
+
+      function statusText(s) {
+        return s === "ok" ? "En stock" : s === "low" ? "Pocas unidades" : "Agotado";
+      }
+    });
+  </script>
+</body>
+</html>

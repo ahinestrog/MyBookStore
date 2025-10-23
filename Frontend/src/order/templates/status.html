@@ -1,0 +1,24 @@
+{{ define "title" }}Estado de orden · MyBookStore{{ end }}
+{{ define "content" }}
+<section class="card">
+  <h2>Ver estado de orden</h2>
+  <form method="get" action="/status">
+    <label>Order ID
+      <input type="number" name="order_id" min="1" value="{{ .QueryOrderID }}" required placeholder="e.g. 12">
+    </label>
+    <button type="submit">Consultar</button>
+  </form>
+
+  {{ if .Error }}
+    <p class="error">⚠ {{ .Error }}</p>
+  {{ end }}
+
+  {{ if .Found }}
+    <hr>
+    <p><strong>ID:</strong> {{ .OrderID }}</p>
+    <p><strong>Estado:</strong> {{ .Status }}</p>
+    <p><strong>Total:</strong> {{ .Total }}</p>
+    <p><small>Última actualización (unix): {{ .UpdatedUnix }}</small></p>
+  {{ end }}
+</section>
+{{ end }}

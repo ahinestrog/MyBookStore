@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <title>Registro</title>
+  <link rel="stylesheet" href="/static/styles.css"/>
+</head>
+<body>
+<div class="container">
+  <h1>Crear cuenta</h1>
+  {{if .Error}}<div class="alert">{{.Error}}</div>{{end}}
+  <form method="post" action="/register" class="form">
+    <label>Nombre <input name="name" required></label>
+    <label>Email <input name="email" type="email" required></label>
+    <label>Contraseña <input name="password" type="password" required></label>
+    <button class="btn" type="submit">Registrarme</button>
+  </form>
+  <p><a href="/">Inicio</a></p>
+</div>
+</body>
+</html>

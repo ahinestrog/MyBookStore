@@ -1,0 +1,36 @@
+{{define "title"}}Catálogo - MyBookStore{{end}}
+{{define "content"}}
+<section>
+  {{if .Items}}
+  <div class="grid">
+    {{range .Items}}
+      <article class="card">
+        <a class="cover" href="/book?id={{.Id}}">
+          <img src="{{.CoverUrl}}" alt="Portada de {{.Title}}">
+        </a>
+        <div class="card-body">
+          <h3 class="title"><a href="/book?id={{.Id}}">{{.Title}}</a></h3>
+          <p class="author">{{.Author}}</p>
+          <p class="price">{{.PriceStr}}</p>
+          <a class="btn" href="/book?id={{.Id}}">Ver</a>
+        </div>
+      </article>
+    {{end}}
+  </div>
+
+  <div class="pager">
+    {{with .Page}}
+      {{if gt .Page 1}}
+        <a class="page" href="{{$.PageURL (add .Page -1)}}">« Anterior</a>
+      {{end}}
+      <span class="page current">Página {{.Page}} / {{.TotalPages}}</span>
+      {{if lt .Page .TotalPages}}
+        <a class="page" href="{{$.PageURL (add .Page 1)}}">Siguiente »</a>
+      {{end}}
+    {{end}}
+  </div>
+  {{else}}
+    <p>No hay resultados.</p>
+  {{end}}
+</section>
+{{end}}

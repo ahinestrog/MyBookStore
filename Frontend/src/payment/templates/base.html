@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{{block "title" .}}{{.Title}}{{end}} · MyBookStore</title>
+  <link rel="stylesheet" href="/static/payment.css"/>
+</head>
+<body>
+  <header class="container">
+    <h1><a class="brand" href="/">MyBookStore</a></h1>
+    <nav>
+      <a href="/catalog">Catálogo</a>
+      <a href="/cart">Carrito</a>
+      <a href="/order">Orden</a>
+      <a class="active" href="/payment/status">Pago</a>
+    </nav>
+  </header>
+  <main class="container">
+    {{block "content" .}}{{end}}
+  </main>
+  <footer class="container footer">
+    <small>Payment Frontend · gRPC a Payment · {{since .UpdatedUnix}}</small>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{{ define "content" }}
+<section class="card">
+  <h2>Agregar al carrito</h2>
+  <form action="/add" method="post" class="form-grid">
+    <label>Book ID
+      <input name="book_id" type="number" min="1" step="1" required placeholder="101">
+    </label>
+    <label>Cantidad
+      <input name="qty" type="number" min="1" step="1" value="1" required>
+    </label>
+    <button type="submit">Agregar</button>
+  </form>
+  <p class="hint">El precio y título se resuelven en el backend (catálogo). Para demo se usa un valor fijo.</p>
+  <p><a href="/cart">Ver carrito</a></p>
+</section>
+{{ end }}
+{{ template "layout.html" . }}

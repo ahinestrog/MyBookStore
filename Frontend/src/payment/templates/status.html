@@ -1,0 +1,31 @@
+{{define "title"}}Estado de Pago{{end}}
+{{template "base.html" .}}
+{{define "content"}}
+<section class="card">
+  <h2>Consultar estado de pago</h2>
+  <form method="get" action="/payment/status" class="form-row">
+    <label for="order_id">Order ID</label>
+    <input type="number" id="order_id" name="order_id" min="1" step="1" placeholder="ej. 101" value="{{.QueryOrder}}" required>
+    <button type="submit">Consultar</button>
+  </form>
+
+  {{if .ErrorMsg}}
+    <p class="alert alert-error">{{.ErrorMsg}}</p>
+  {{end}}
+
+  {{if .HasResult}}
+  <div class="result">
+    <div class="grid">
+      <div><strong>Order ID:</strong></div><div>#{{.OrderID}}</div>
+      <div><strong>Estado:</strong></div><div><span class="{{badgeClass .StateStr}}">{{.StateStr}}</span></div>
+      <div><strong>Provider Ref:</strong></div><div>{{if .ProviderRef}}{{.ProviderRef}}{{else}}-{{end}}</div>
+      <div><strong>Última actualización:</strong></div><div>{{since .UpdatedUnix}}</div>
+    </div>
+    <div class="hint">
+      <p>El cobro real se procesa por eventos (RabbitMQ). Esta pantalla usa gRPC al microservicio Payment.</p>
+      <p>Pasarela fake: <em>order_id par ⇒ éxito</em>; <em>impar ⇒ 80% éxito / 20% falla</em>.</p>
+    </div>
+  </div>
+  {{end}}
+</section>
+{{end}}

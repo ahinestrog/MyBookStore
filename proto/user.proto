@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package user;
+option go_package = "github.com/ahinestrog/mybookstore/proto/gen/user;userpb";
+
+import "common.proto";
+
+// Servicio de usuarios (todo lo síncrono via gRPC).
+service User {
+  // Crea un usuario nuevo. Devuelve el ID asignado.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Autentica por email+password. (En esta versión simple no hay JWT).
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+
+  // Obtiene el perfil básico.
+  rpc GetProfile(common.UserRef) returns (UserProfile);
+
+  // Actualiza el nombre mostrado del usuario.
+  rpc UpdateName(UpdateNameRequest) returns (UserProfile);
+}
+
+// --------- Mensajes ---------
+
+message RegisterRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message RegisterResponse {
+  int64 user_id = 1;
+}
+
+message AuthenticateRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message AuthenticateResponse {
+  bool ok = 1;
+  int64 user_id = 2;
+}
+
+message UserProfile {
+  int64 user_id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+message UpdateNameRequest {
+  int64 user_id = 1;
+  string name = 2;
+}

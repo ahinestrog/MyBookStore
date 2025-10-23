@@ -1,0 +1,23 @@
+:root{--fg:#1b1f23;--bg:#fff;--muted:#6a737d;--ok:#1f883d;--warn:#9a6700;--err:#cf222e;--card:#f6f8fa;--link:#0969da}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+.container{max-width:900px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5e7eb}
+.brand{font-weight:800;font-size:20px}
+nav a{margin:0 8px;color:#444}
+nav a.active{font-weight:600}
+.card{background:var(--card);border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-top:16px}
+.form-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+input,button{padding:10px 12px;border:1px solid #d0d7de;border-radius:8px}
+button{cursor:pointer;background:#111827;color:#fff;border-color:#111827}
+.grid{display:grid;grid-template-columns:180px 1fr;gap:8px 16px;margin-top:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #d0d7de}
+.badge-pending{background:#fff8e1;border-color:#f1c40f}
+.badge-ok{background:#e6ffec;border-color:#1f883d}
+.badge-fail{background:#ffebe9;border-color:#cf222e}
+.alert{margin-top:12px;padding:10px 12px;border-radius:8px;border:1px solid #d0d7de;background:#fff}
+.alert-error{border-color:#cf222e;background:#ffebe9}
+.footer{color:var(--muted);font-size:13px;margin-top:24px}
+.hint{margin-top:12px;color:var(--muted);font-size:14px}

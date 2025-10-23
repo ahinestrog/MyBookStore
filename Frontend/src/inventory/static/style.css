@@ -1,0 +1,84 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #f6f8fa;
+  color: #222;
+}
+
+header {
+  background: #2563eb;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+}
+
+header nav {
+  margin-top: 0.5rem;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  margin: 0 10px;
+}
+
+nav a.active {
+  text-decoration: underline;
+}
+
+main {
+  max-width: 800px;
+  margin: 2rem auto;
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+input {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1e40af;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  border-bottom: 1px solid #eee;
+  text-align: center;
+  padding: 0.75rem;
+}
+
+.status-ok { color: green; font-weight: 600; }
+.status-low { color: orange; font-weight: 600; }
+.status-out { color: red; font-weight: 600; }
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  background: #2563eb;
+  color: white;
+}
