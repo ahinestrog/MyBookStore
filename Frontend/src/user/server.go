@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/ahinestrog/mybookstore/proto/gen/common"
@@ -18,7 +19,8 @@ var (
 func main() {
 	tpl = template.Must(template.ParseGlob("templates/*.html"))
 
-	grpcAddr := env("USER_GRPC_ADDR", "user:50055")
+	// allow overriding when running locally: prefer localhost by default
+	grpcAddr := env("USER_GRPC_ADDR", "localhost:50055")
 
 	conn, err := grpc.Dial(grpcAddr, grpc.WithInsecure())
 	if err != nil {
@@ -84,16 +86,22 @@ func main() {
 		_ = tpl.ExecuteTemplate(w, "profile.html", prof)
 	})
 
-	addr := env("HTTP_ADDR", ":8080")
+	// HTTP_ADDR is expected in the form ":8080"; for convenience also allow PORT
+	addr := env("HTTP_ADDR", "")
+	if addr == "" {
+		if p := os.Getenv("PORT"); p != "" {
+			addr = ":" + p
+		} else {
+			addr = ":8080"
+		}
+	}
 	log.Printf("[frontend-user] listening on %s (gRPC at %s)", addr, grpcAddr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
 func env(k, def string) string {
-	if v := getenv(k); v != "" {
+	if v := os.Getenv(k); v != "" {
 		return v
 	}
 	return def
 }
-
-func getenv(k string) string { return func() string { return "" }() } // placeholder so we don't import os in this tiny file

@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"html/template"
+	"strings"
 	"log"
 	"net/http"
 	"os"
@@ -43,6 +44,8 @@ func main() {
 	// Parse templates
 	funcs := template.FuncMap{
 		"add": func(a, b int32) int32 { return a + b },
+		"split": func(s, sep string) []string { return strings.Split(s, sep) },
+		"year": func() int { return time.Now().Year() },
 	}
 
 	tplLayout := template.Must(template.New("layout.html").Funcs(funcs).ParseFS(templatesFS, "templates/layout.html"))
@@ -104,20 +107,44 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]listItem, 0, len(resp.GetItems()))
 	for _, it := range resp.GetItems() {
+		// Some older proto objects may have nil Price; guard against nil
+		priceCents := int64(0)
+		if it.GetPrice() != nil {
+			priceCents = it.GetPrice().GetCents()
+		}
+		// determine cover url: prefer embedded /static/... if present, else fallback to placeholder
+		cover := it.GetCoverUrl()
+		finalCover := cover
+		if cover != "" {
+			if cover[0] == '/' {
+				// check if embedded static contains the file under "static" + cover
+				tryPath := "static" + cover
+				if f, err := staticFS.Open(tryPath); err == nil {
+					f.Close()
+					finalCover = "/static" + cover
+				} else {
+					// fallback to a remote placeholder if image not embedded
+					finalCover = "https://via.placeholder.com/200x300?text=Cover"
+				}
+			}
+		} else {
+			finalCover = "https://via.placeholder.com/200x300?text=Cover"
+		}
+
 		items = append(items, listItem{
 			Id: it.GetId(), Title: it.GetTitle(), Author: it.GetAuthor(),
-			CoverUrl: it.GetCoverUrl(), PriceStr: "$ " + formatThousands(it.GetPrice().GetCents()/100),
+			CoverUrl: finalCover, PriceStr: "$ " + formatThousands(priceCents/100),
 		})
 	}
 
 	data := struct {
 		Query      string
-		Items      []*catalogpb.Book
+		Items      []listItem
 		Page       *commonpb.PageResponse
 		PageURL    func(int) string
 	}{
 		Query: q,
-		Items: resp.GetItems(),
+		Items: items,
 		Page:  resp.GetPage(),
 		PageURL: func(p int) string {
 			qs := r.URL.Query()
@@ -128,6 +155,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.tplList.Execute(w, data); err != nil {
+		log.Printf("template execute list error: %v", err)
 		httpError(w, "Error renderizando página", http.StatusInternalServerError)
 	}
 }
@@ -148,10 +176,12 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		Query string
 		Book *catalogpb.Book
 		// helper para formatear dinero: cents → "12.345,67" o "12,345.67" según preferencia
 		FormatCOP func(int64) string
 	}{
+		Query: r.URL.Query().Get("q"),
 		Book: b,
 		FormatCOP: func(cents int64) string {
 			// muy simple: pesos enteros
@@ -161,6 +191,7 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.tplBook.Execute(w, data); err != nil {
+		log.Printf("template execute book error: %v", err)
 		httpError(w, "Error renderizando página", http.StatusInternalServerError)
 	}
 }

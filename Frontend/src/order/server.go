@@ -33,7 +33,9 @@ type app struct {
 func main() {
 	a := &app{
 		addr:      getEnv("FRONTEND_ADDR", ":8083"),
-		orderAddr: getEnv("ORDER_SVC_ADDR", "localhost:50053"),
+		// Default ORDER_SVC_ADDR changed to 50056 to match common local runs
+		// (the backend in this workspace has been observed listening on 50056).
+		orderAddr: getEnv("ORDER_SVC_ADDR", "localhost:50056"),
 	}
 	a.loadTemplates()
 	mux := http.NewServeMux()
@@ -79,8 +81,13 @@ func (a *app) dialOrder() (*grpc.ClientConn, orderpb.OrderClient, error) {
 // Función render que ejecuta el layout y las plantillas
 func render(w http.ResponseWriter, tpls *template.Template, layout, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	err := tpls.ExecuteTemplate(w, name, data)
-	if err != nil {
+	// Execute the layout template so that defined blocks (e.g. content/title)
+	// inside other files (index.html/status.html) are rendered within the layout.
+	// Previously this executed the inner 'name' template which only contained
+	// definitions and produced an empty response.
+	if err := tpls.ExecuteTemplate(w, layout, data); err != nil {
+		// Log the error server-side and return an informative 500 body for quicker debugging
+		log.Printf("template execute error: %v (layout=%s name=%s)", err, layout, name)
 		http.Error(w, fmt.Sprintf("error renderizando %s: %v", name, err), http.StatusInternalServerError)
 	}
 }

@@ -1,0 +1,3 @@
+2025/10/25 01:32:26 [order] config: {GRPCAddr::50053 DBPath:/home/samuel/mybookstore-data/order.db RabbitURL:amqp://guest:guest@localhost:5672/ RabbitExchange:domain_events CartGRPCAddr:localhost:50051}
+2025/10/25 01:32:28 listen err: listen tcp :50053: bind: address already in use
+exit status 1
