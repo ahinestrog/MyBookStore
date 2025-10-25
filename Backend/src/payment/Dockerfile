@@ -1,28 +1,35 @@
-# Backend/src/payment/src/Dockerfile
-FROM golang:1.22-alpine AS build
+FROM golang:1.24-alpine AS build
+RUN apk add --no-cache git build-base sqlite-dev
 WORKDIR /app
 
-# Dependencias del sistema para SQLite
-RUN apk add --no-cache build-base sqlite-dev
-
-# Copia del repo
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copiamos todo el monorepo para que el import de proto/gen/* funcione
-COPY . .
+COPY proto/gen ./proto/gen
+COPY Backend/src/payment/ ./Backend/src/payment/
 
 WORKDIR /app/Backend/src/payment/src
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /bin/payment-service .
+ENV CGO_ENABLED=1 GOOS=linux GOARCH=amd64
+RUN go build -o /bin/payment-service .
 
 FROM alpine:3.20
 WORKDIR /srv
-RUN apk add --no-cache ca-certificates sqlite-libs
+RUN apk add --no-cache ca-certificates sqlite-libs \
+ && adduser -D -H -u 10001 app \
+ && mkdir -p /data && chown -R app:app /data
+
+USER app:app
+COPY --from=build /bin/payment-service /srv/payment-service
+
 ENV PAYMENT_GRPC_PORT=50053 \
     PAYMENT_SQLITE_PATH=/data/payment.db \
-    EVENTS_EXCHANGE=mybookstore.events \
-    PAYMENT_REQUEST_QUEUE=payment.charge.requested
-EXPOSE 50053
+    PAYMENT_LOG_LEVEL=info \
+    PAYMENT_REQUEST_QUEUE=payment.charge.requested \
+    PAYMENT_CONSUMER_TAG=payment-service \
+    PAYMENT_PREFETCH_COUNT=10 \
+    RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/ \
+    EVENTS_EXCHANGE=mybookstore.events
+
 VOLUME ["/data"]
-COPY --from=build /bin/payment-service /usr/local/bin/payment-service
-ENTRYPOINT ["/usr/local/bin/payment-service"]
+EXPOSE 50053
+ENTRYPOINT ["/srv/payment-service"]

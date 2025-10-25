@@ -1,0 +1,251 @@
+name: mybookstore
+
+services:
+  # ===== Infra =====
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "15672:15672"        # UI RabbitMQ (necesaria para navegador)
+      # - "5672:5672"        # AMQP (opcional si vas a consumir desde fuera de Docker)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [appnet]
+
+  # ===== Backends (gRPC internos, sin puertos publicados) =====
+  user:
+    build: 
+      context: . 
+      dockerfile: Backend/src/user/Dockerfile
+    env_file: .env
+    environment:
+      USER_GRPC_PORT: ${USER_GRPC_PORT}
+      USER_DB_PATH: ${USER_DB_PATH}
+      USER_LOG_LEVEL: ${USER_LOG_LEVEL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    volumes:
+      - user_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [appnet]
+
+  catalog:
+    build: 
+      context: . 
+      dockerfile: Backend/src/catalog/Dockerfile
+    env_file: .env
+    environment:
+      CATALOG_GRPC_PORT: ${CATALOG_GRPC_PORT}
+      CATALOG_DB_PATH: ${CATALOG_DB_PATH}
+      CATALOG_LOG_LEVEL: ${CATALOG_LOG_LEVEL}
+      CATALOG_RABBITMQ_URL: ${CATALOG_RABBITMQ_URL}
+      CATALOG_EVENTS_EXCHANGE: ${CATALOG_EVENTS_EXCHANGE}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    volumes:
+      - catalog_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [appnet]
+
+  cart:
+    build:
+      context: .  # Va a la raíz del repo
+      dockerfile: Backend/src/cart/Dockerfile
+    env_file: .env
+    environment:
+      CART_GRPC_PORT: ${CART_GRPC_PORT}
+      CART_DB_PATH: ${CART_DB_PATH}
+      CART_LOG_LEVEL: ${CART_LOG_LEVEL}
+      CART_RABBITMQ_URL: ${CART_RABBITMQ_URL}
+      CART_EVENTS_EXCHANGE: ${CART_EVENTS_EXCHANGE}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    volumes:
+      - cart_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [appnet]
+
+  inventory:
+    build: 
+      context: . 
+      dockerfile: Backend/src/inventory/Dockerfile
+    env_file: .env
+    environment:
+      INVENTORY_GRPC_PORT: ${INVENTORY_GRPC_PORT}
+      INVENTORY_DB_PATH: ${INVENTORY_DB_PATH}
+      INVENTORY_LOG_LEVEL: ${INVENTORY_LOG_LEVEL}
+      INVENTORY_SEED: ${INVENTORY_SEED}
+      INVENTORY_RABBITMQ_URL: ${INVENTORY_RABBITMQ_URL}
+      INVENTORY_EVENTS_EXCHANGE: ${INVENTORY_EVENTS_EXCHANGE}
+      Q_INVENTORY_RESERVE_REQUEST: ${Q_INVENTORY_RESERVE_REQUEST}
+      Q_INVENTORY_RESERVE_RESULT: ${Q_INVENTORY_RESERVE_RESULT}
+      Q_INVENTORY_CONFIRM_REQUEST: ${Q_INVENTORY_CONFIRM_REQUEST}
+      Q_INVENTORY_RELEASE_REQUEST: ${Q_INVENTORY_RELEASE_REQUEST}
+      INVENTORY_CONSUMER_TAG: ${INVENTORY_CONSUMER_TAG}
+      INVENTORY_PREFETCH_COUNT: ${INVENTORY_PREFETCH_COUNT}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    volumes:
+      - inventory_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks: [appnet]
+
+  order:
+    build: 
+      context: . 
+      dockerfile: Backend/src/order/Dockerfile
+    env_file: .env
+    environment:
+      ORDER_GRPC_PORT: ${ORDER_GRPC_PORT}
+      ORDER_DB_PATH: ${ORDER_DB_PATH}
+      ORDER_LOG_LEVEL: ${ORDER_LOG_LEVEL}
+      ORDER_CART_GRPC_ADDR: ${ORDER_CART_GRPC_ADDR}
+      ORDER_RABBITMQ_URL: ${ORDER_RABBITMQ_URL}
+      ORDER_EVENTS_EXCHANGE: ${ORDER_EVENTS_EXCHANGE}
+      ORDER_CONSUMER_TAG: ${ORDER_CONSUMER_TAG}
+      ORDER_PREFETCH_COUNT: ${ORDER_PREFETCH_COUNT}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    volumes:
+      - order_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      cart:
+        condition: service_started
+    networks: [appnet]
+
+  payment:
+    build: 
+      context: . 
+      dockerfile: Backend/src/payment/Dockerfile
+    env_file: .env
+    environment:
+      PAYMENT_GRPC_PORT: ${PAYMENT_GRPC_PORT}
+      PAYMENT_SQLITE_PATH: ${PAYMENT_SQLITE_PATH}
+      PAYMENT_LOG_LEVEL: ${PAYMENT_LOG_LEVEL}
+      PAYMENT_REQUEST_QUEUE: ${PAYMENT_REQUEST_QUEUE}
+      PAYMENT_CONSUMER_TAG: ${PAYMENT_CONSUMER_TAG}
+      PAYMENT_PREFETCH_COUNT: ${PAYMENT_PREFETCH_COUNT}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      EVENTS_EXCHANGE: ${EVENTS_EXCHANGE}
+    volumes:
+      - payment_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      order:
+        condition: service_started
+    networks: [appnet]
+
+  # ===== Frontends (HTTP publicados para navegador) =====
+  frontend_user:
+    build: 
+      context: . 
+      dockerfile: Frontend/src/user/Dockerfile
+    env_file: .env
+    environment:
+      HTTP_ADDR: ${HTTP_ADDR}                  # => :8080
+      USER_GRPC_ADDR: ${USER_GRPC_ADDR}        # => user:50055
+    ports:
+      - "8080:8080"
+    depends_on:
+      user:
+        condition: service_started
+    networks: [appnet]
+
+  frontend_catalog:
+    build: 
+      context: . 
+      dockerfile: Frontend/src/catalog/Dockerfile
+    env_file: .env
+    environment:
+      FRONTEND_CATALOG_ADDR: ${FRONTEND_CATALOG_ADDR}    # :8081
+      CATALOG_GRPC_ADDR: ${CATALOG_GRPC_ADDR}            # catalog:50051
+    ports:
+      - "${FRONTEND_CATALOG_PORT:-8081}:8081"
+    depends_on:
+      catalog:
+        condition: service_started
+    networks: [appnet]
+
+  frontend_cart:
+    build: 
+      context: . 
+      dockerfile: Frontend/src/cart/Dockerfile
+    env_file: .env
+    environment:
+      GATEWAY_HTTP_ADDR: ${GATEWAY_HTTP_ADDR}           # :8085
+      CART_GRPC_TARGET: ${CART_GRPC_TARGET}             # cart:50050
+    ports:
+      - "${FRONTEND_CART_PORT:-8085}:8085"
+    depends_on:
+      cart:
+        condition: service_started
+    networks: [appnet]
+
+  frontend_inventory:
+    build: 
+      context: . 
+      dockerfile: Frontend/src/inventory/Dockerfile
+    env_file: .env
+    environment:
+      FRONTEND_INVENTORY_ADDR: ${FRONTEND_INVENTORY_ADDR}  # :8082
+      INVENTORY_GRPC_ADDR: ${INVENTORY_GRPC_ADDR}          # inventory:50052
+    ports:
+      - "${FRONTEND_INVENTORY_PORT:-8082}:8082"
+    depends_on:
+      inventory:
+        condition: service_started
+    networks: [appnet]
+
+  frontend_order:
+    build: 
+      context: . 
+      dockerfile: Frontend/src/order/Dockerfile
+    env_file: .env
+    environment:
+      FRONTEND_ADDR: ${FRONTEND_ADDR}          # :8083
+      ORDER_SVC_ADDR: ${ORDER_SVC_ADDR}        # order:50054
+    ports:
+      - "${FRONTEND_ORDER_PORT:-8083}:8083"
+    depends_on:
+      order:
+        condition: service_started
+    networks: [appnet]
+
+  frontend_payment:
+    build: 
+      context: . 
+      dockerfile: Frontend/src/payment/Dockerfile
+    env_file: .env
+    environment:
+      HTTP_ADDR: ${FRONTEND_PAYMENT_PORT}   # 8084
+      PAYMENT_GRPC_ADDR: ${PAYMENT_GRPC_ADDR}           # payment:50053
+    ports:
+      - "${FRONTEND_PAYMENT_PORT:-8084}:8084"
+    depends_on:
+      payment:
+        condition: service_started
+    networks: [appnet]
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  user_data:
+  catalog_data:
+  cart_data:
+  inventory_data:
+  order_data:
+  payment_data:

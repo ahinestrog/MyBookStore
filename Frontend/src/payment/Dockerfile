@@ -1,27 +1,25 @@
-FROM golang:1.22-alpine AS build
+FROM golang:1.24 AS build
 WORKDIR /app
-RUN apk add --no-cache build-base
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
-# Dependencias 
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copiamos todo el repo para que el import de proto/gen/* funcione
-COPY . .
+COPY proto/gen ./proto/gen
+COPY Frontend/src/payment/ ./Frontend/src/payment/
 
-# Compilamos el servidor
 WORKDIR /app/Frontend/src/payment
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/payment-frontend server.go
+RUN go build -o /bin/payment-frontend .
 
-FROM alpine:3.20
+FROM gcr.io/distroless/base-debian12:nonroot
 WORKDIR /srv
-ENV FRONTEND_PAYMENT_PORT=8084 \
+USER nonroot:nonroot
+COPY --from=build /bin/payment-frontend /bin/payment-frontend
+COPY --from=build /app/Frontend/src/payment/templates /srv/templates
+COPY --from=build /app/Frontend/src/payment/static    /srv/static
+ENV HTTP_ADDR=:8084 \
+    FRONTEND_PAYMENT_ADDR=:8084 \
     PAYMENT_GRPC_ADDR=payment:50053
 EXPOSE 8084
-# Binario
-COPY --from=build /bin/payment-frontend /usr/local/bin/payment-frontend
-# Templates y estáticos (desde esta carpeta)
-COPY Frontend/src/payment/templates /srv/templates
-COPY Frontend/src/payment/static /srv/static
-ENTRYPOINT ["/usr/local/bin/payment-frontend"]
+ENTRYPOINT ["/bin/payment-frontend"]
 

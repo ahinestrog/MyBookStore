@@ -1,22 +1,23 @@
-# Frontend/src/order/Dockerfile
-FROM golang:1.22 AS build
+FROM golang:1.24 AS build
 
 WORKDIR /app
-# módulos del repo raíz
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Código del frontend y stubs de proto
-COPY Frontend/src/order /app/Frontend/src/order
-COPY proto/gen /app/proto/gen
+COPY Frontend/src/order ./Frontend/src/order
+COPY proto/gen ./proto/gen
 
 WORKDIR /app/Frontend/src/order
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /order-frontend server.go
+RUN go build -o /bin/order-frontend .
 
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian12:nonroot
 WORKDIR /srv
+USER nonroot:nonroot
+COPY --from=build /bin/order-frontend /bin/order-frontend
+COPY --from=build /app/Frontend/src/order/templates /srv/templates
+COPY --from=build /app/Frontend/src/order/static    /srv/static
 ENV FRONTEND_ADDR=:8083 \
-    ORDER_SVC_ADDR=order:50053
+    ORDER_SVC_ADDR=order:50054
 EXPOSE 8083
-COPY --from=build /order-frontend /usr/local/bin/order-frontend
-ENTRYPOINT ["/usr/local/bin/order-frontend"]
+ENTRYPOINT ["/bin/order-frontend"]

@@ -1,21 +1,24 @@
-# Build
-FROM golang:1.22 AS builder
+FROM golang:1.24 AS build
 WORKDIR /app
-ENV CGO_ENABLED=0 GOOS=linux
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY proto/gen ./proto/gen
+COPY Frontend/src/catalog/ ./Frontend/src/catalog/
 WORKDIR /app/Frontend/src/catalog
-RUN go build -o /catalog-frontend
+RUN go build -o /bin/catalog-frontend .
 
-# Runtime
-FROM gcr.io/distroless/static-debian12
+
+FROM gcr.io/distroless/base-debian12:nonroot
 WORKDIR /srv
-COPY --from=builder /catalog-frontend /srv/catalog-frontend
-# Los assets embebidos (embed.FS) ya están dentro del binario
-ENV PORT=8080
-ENV CATALOG_GRPC_ADDR=catalog:50051
-EXPOSE 8080
-ENTRYPOINT ["/srv/catalog-frontend"]
+USER nonroot:nonroot
+COPY --from=build /bin/catalog-frontend /bin/catalog-frontend
+COPY --from=build /app/Frontend/src/catalog/templates /srv/templates
+COPY --from=build /app/Frontend/src/catalog/static    /srv/static
+
+ENV FRONTEND_CATALOG_ADDR=:8081 \
+    CATALOG_GRPC_ADDR=catalog:50051
+EXPOSE 8081
+ENTRYPOINT ["/bin/catalog-frontend"]
