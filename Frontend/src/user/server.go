@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/ahinestrog/mybookstore/proto/gen/common"
-	"github.com/ahinestrog/mybookstore/proto/gen/user"
+	commonpb "github.com/ahinestrog/mybookstore/proto/gen/common"
+	userpb "github.com/ahinestrog/mybookstore/proto/gen/user"
 	"google.golang.org/grpc"
 )
 
@@ -17,7 +17,7 @@ var (
 )
 
 func main() {
-	tpl = template.Must(template.ParseGlob("templates/*.html"))
+	tpl = template.Must(template.ParseGlob("/srv/templates/*.html"))
 
 	// allow overriding when running locally: prefer localhost by default
 	grpcAddr := env("USER_GRPC_ADDR", "localhost:50055")
@@ -29,7 +29,7 @@ func main() {
 	defer conn.Close()
 	client := userpb.NewUserClient(conn)
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("/srv/static"))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_ = tpl.ExecuteTemplate(w, "home.html", nil)

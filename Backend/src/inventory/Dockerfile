@@ -1,21 +1,24 @@
-FROM golang:1.24 AS builder
+FROM golang:1.24-alpine AS build
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      git build-essential ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache gcc musl-dev
+
 COPY go.mod go.sum ./
 RUN go mod download
-
-COPY Backend/src/inventory/src ./Backend/src/inventory/src
 COPY proto/gen ./proto/gen
+COPY Backend/src/inventory/src ./Backend/src/inventory/src
 
 WORKDIR /app/Backend/src/inventory/src
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/inventory
+RUN CGO_ENABLED=1 go build -o /bin/inventory .
 
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM alpine:3.18
 WORKDIR /srv
-USER nonroot:nonroot
-COPY --from=builder /bin/inventory /srv/inventory
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    mkdir -p /data && \
+    chown -R appuser:appgroup /data /srv
+
+COPY --from=build /bin/inventory /srv/inventory
+USER appuser:appgroup
 
 VOLUME ["/data"]
 

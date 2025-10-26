@@ -1,25 +1,30 @@
-FROM golang:1.24 AS builder
+FROM golang:1.24-alpine AS build
 WORKDIR /app
-ENV CGO_ENABLED=1 GOOS=linux
+RUN apk add --no-cache gcc musl-dev
 
 COPY go.mod go.sum ./
 RUN go mod download
 COPY proto/gen ./proto/gen
-COPY Backend/src/catalog/ ./Backend/src/catalog/
+COPY Backend/src/catalog ./Backend/src/catalog
 
 WORKDIR /app/Backend/src/catalog/src
-RUN go build -o /catalog-server
+RUN CGO_ENABLED=1 go build -o /bin/catalog-server .
 
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM alpine:3.18
 WORKDIR /srv
-USER nonroot:nonroot
 
-COPY --from=builder /catalog-server /srv/catalog-server
-COPY --from=builder /app/Backend/src/catalog/src/db/db.sql /srv/src/db/db.sql
-COPY --from=builder /app/Backend/src/catalog/src/db/seed.sql /srv/src/db/seed.sql
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    mkdir -p /data && \
+    chown -R appuser:appgroup /data /srv
+
+COPY --from=build /bin/catalog-server /srv/catalog-server
+COPY --from=build /app/Backend/src/catalog/src/db/db.sql /srv/db/db.sql
+COPY --from=build /app/Backend/src/catalog/src/db/seed.sql /srv/db/seed.sql
+
+USER appuser:appgroup
 
 ENV GRPC_PORT=50051
-ENV CATALOG_DB_PATH=./data/catalog.db
+ENV CATALOG_DB_PATH=/data/catalog.db
 # Persistencia del servicio
 VOLUME ["/data"]
 EXPOSE 50051

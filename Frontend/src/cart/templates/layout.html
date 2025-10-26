@@ -2,23 +2,31 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
-  <title>MyBookStore · Carrito</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="stylesheet" href="/static/styles.css"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{{block "title" .}}MyBookStore - Carrito{{end}}</title>
+  <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body>
-  <header class="hdr">
-    <h1>MyBookStore</h1>
-    <nav>
-      <a href="/">Agregar</a>
-      <a href="/cart">Carrito</a>
+  <header class="navbar">
+    <a class="brand" href="/">📚 MyBookStore</a>
+    <form class="search" action="/" method="get">
+      <input type="text" name="q" placeholder="Buscar título o autor…" value="{{.Query}}">
+      <button type="submit">Buscar</button>
+    </form>
+    <nav class="navlinks">
+      <a href="/">🏠 Catálogo</a>
+      <a href="/cart" class="active">🛒 Carrito</a>
+      <a href="/orders">📦 Órdenes</a>
     </nav>
   </header>
+
   <main class="container">
-    {{ template "content" . }}
+    {{block "content" .}}{{end}}
   </main>
-  <footer class="ftr">
-    <small>Demo · gRPC · HTML+CSS</small>
+
+  <footer class="footer">
+    <small>© {{.Year}} MyBookStore</small>
   </footer>
 </body>
 </html>
+

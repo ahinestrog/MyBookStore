@@ -4,15 +4,15 @@ import (
 	"context"
 	"embed"
 	"html/template"
-	"strings"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	catalogpb "github.com/ahinestrog/mybookstore/proto/gen/catalog"
-	commonpb  "github.com/ahinestrog/mybookstore/proto/gen/common"
+	commonpb "github.com/ahinestrog/mybookstore/proto/gen/common"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -30,7 +30,7 @@ type Server struct {
 }
 
 func main() {
-	port := getenv("PORT", "8080")
+	addr := getenv("FRONTEND_CATALOG_ADDR", ":8081")
 	grpcAddr := getenv("CATALOG_GRPC_ADDR", "localhost:50051")
 
 	// gRPC client
@@ -43,14 +43,14 @@ func main() {
 
 	// Parse templates
 	funcs := template.FuncMap{
-		"add": func(a, b int32) int32 { return a + b },
+		"add":   func(a, b int32) int32 { return a + b },
 		"split": func(s, sep string) []string { return strings.Split(s, sep) },
-		"year": func() int { return time.Now().Year() },
+		"year":  func() int { return time.Now().Year() },
 	}
 
 	tplLayout := template.Must(template.New("layout.html").Funcs(funcs).ParseFS(templatesFS, "templates/layout.html"))
-	tplList   := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/index.html"))
-	tplBook   := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/book.html"))
+	tplList := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/index.html"))
+	tplBook := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/book.html"))
 
 	s := &Server{tplList: tplList, tplBook: tplBook, client: client}
 
@@ -61,8 +61,8 @@ func main() {
 	// static
 	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
 
-	log.Printf("Catalog Frontend listening on :%s (Catalog gRPC → %s)", port, grpcAddr)
-	if err := http.ListenAndServe(":"+port, withLog(mux)); err != nil {
+	log.Printf("Catalog Frontend listening on %s (Catalog gRPC → %s)", addr, grpcAddr)
+	if err := http.ListenAndServe(addr, withLog(mux)); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -81,9 +81,13 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query().Get("q")
 	page := atoiDefault(r.URL.Query().Get("page"), 1)
-	if page < 1 { page = 1 }
+	if page < 1 {
+		page = 1
+	}
 	size := atoiDefault(r.URL.Query().Get("page_size"), 12)
-	if size <= 0 { size = 12 }
+	if size <= 0 {
+		size = 12
+	}
 
 	resp, err := s.client.ListBooks(ctx, &catalogpb.ListBooksRequest{
 		Q: q,
@@ -138,10 +142,10 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Query      string
-		Items      []listItem
-		Page       *commonpb.PageResponse
-		PageURL    func(int) string
+		Query   string
+		Items   []listItem
+		Page    *commonpb.PageResponse
+		PageURL func(int) string
 	}{
 		Query: q,
 		Items: items,
@@ -150,7 +154,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 			qs := r.URL.Query()
 			qs.Set("page", strconv.Itoa(p))
 			qs.Set("page_size", strconv.Itoa(size))
-			return "/?"+qs.Encode()
+			return "/?" + qs.Encode()
 		},
 	}
 
@@ -177,12 +181,12 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Query string
-		Book *catalogpb.Book
+		Book  *catalogpb.Book
 		// helper para formatear dinero: cents → "12.345,67" o "12,345.67" según preferencia
 		FormatCOP func(int64) string
 	}{
 		Query: r.URL.Query().Get("q"),
-		Book: b,
+		Book:  b,
 		FormatCOP: func(cents int64) string {
 			// muy simple: pesos enteros
 			pesos := cents / 100
@@ -198,31 +202,47 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 
 // --- utils ---
 
-func getenv(k, d string) string { if v := os.Getenv(k); v != "" { return v }; return d }
+func getenv(k, d string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return d
+}
 
 func atoiDefault(s string, d int) int {
-	if s == "" { return d }
+	if s == "" {
+		return d
+	}
 	i, err := strconv.Atoi(s)
-	if err != nil { return d }
+	if err != nil {
+		return d
+	}
 	return i
 }
 
 func atoi64Default(s string, d int64) int64 {
-	if s == "" { return d }
+	if s == "" {
+		return d
+	}
 	i, err := strconv.ParseInt(s, 10, 64)
-	if err != nil { return d }
+	if err != nil {
+		return d
+	}
 	return i
 }
 
 func httpError(w http.ResponseWriter, msg string, code int) {
 	w.WriteHeader(code)
-	_, _ = w.Write([]byte("<pre>"+template.HTMLEscapeString(msg)+"</pre>"))
+	_, _ = w.Write([]byte("<pre>" + template.HTMLEscapeString(msg) + "</pre>"))
 }
 
 func formatThousands(n int64) string {
 	s := strconv.FormatInt(n, 10)
 	neg := false
-	if n < 0 { neg = true; s = s[1:] }
+	if n < 0 {
+		neg = true
+		s = s[1:]
+	}
 	out := ""
 	for i, r := range s {
 		if i != 0 && (len(s)-i)%3 == 0 {
@@ -230,6 +250,8 @@ func formatThousands(n int64) string {
 		}
 		out += string(r)
 	}
-	if neg { out = "-" + out }
+	if neg {
+		out = "-" + out
+	}
 	return out
 }

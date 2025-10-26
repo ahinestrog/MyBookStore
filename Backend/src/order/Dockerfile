@@ -1,19 +1,24 @@
-FROM golang:1.24 as build
-
+FROM golang:1.24-alpine AS build
 WORKDIR /app
+RUN apk add --no-cache gcc musl-dev
+
 COPY go.mod go.sum ./
 RUN go mod download
-
-COPY Backend/src/order/ ./Backend/src/order/
 COPY proto/gen ./proto/gen
+COPY Backend/src/order/ ./Backend/src/order/
 
 WORKDIR /app/Backend/src/order/src
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /order-service
+RUN CGO_ENABLED=1 go build -o /bin/order-service .
 
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM alpine:3.18
 WORKDIR /srv
-USER nonroot:nonroot
-COPY --from=build /order-service /usr/local/bin/order-service
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    mkdir -p /data && \
+    chown -R appuser:appgroup /data /srv
+
+COPY --from=build /bin/order-service /srv/order-service
+USER appuser:appgroup
 VOLUME ["/data"]
 ENV ORDER_GRPC_ADDR=:50053 \
     ORDER_DB_PATH=/data/order.db \

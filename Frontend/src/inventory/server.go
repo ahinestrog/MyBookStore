@@ -29,10 +29,11 @@ func main() {
 	// Archivos estáticos
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	// Endpoint API
+	// API endpoint
 	mux.HandleFunc("/api/inventory", handleAPIInventory)
 
-	// Página principal
+	// Frontend - sirve la página tanto en / como en /inventory para mantener compatibilidad
+	mux.HandleFunc("/", handleInventoryPage)
 	mux.HandleFunc("/inventory", handleInventoryPage)
 
 	fmt.Println("🌐 Inventory Frontend corriendo en http://localhost:8082/inventory")
@@ -72,4 +73,3 @@ func handleAPIInventory(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]any{"items": items})
 }
-

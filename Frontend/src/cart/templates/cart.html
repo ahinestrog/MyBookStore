@@ -1,52 +1,57 @@
-{{ define "content" }}
-<section class="card">
-  <h2>Tu carrito</h2>
+{{define "title"}}Carrito · MyBookStore{{end}}
+{{define "content"}}
+<section class="cart-page">
+  <h2 class="cart-title">🛒 Tu carrito</h2>
 
-  {{ if .Msg }}<div class="msg">{{ .Msg }}</div>{{ end }}
+  {{if .Msg}}
+  <div class="alert success">{{.Msg}}</div>
+  {{end}}
 
-  <table class="tab">
-    <thead>
-      <tr>
-        <th>Book ID</th><th>Título</th><th>Unit (¢)</th><th>Cant</th><th>Subtotal (¢)</th><th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-    {{ range .Items }}
-      <tr>
-        <td>{{ .BookID }}</td>
-        <td>{{ .Title }}</td>
-        <td>{{ .Unit.String }}</td>
-        <td>{{ .Qty }}</td>
-        <td>{{ .Line.String }}</td>
-        <td class="actions">
-          <form action="/remove" method="post">
-            <input type="hidden" name="book_id" value="{{ .BookID }}"/>
-            <input type="hidden" name="qty" value="1"/>
-            <button>-1</button>
-          </form>
-          <form action="/remove_line" method="post">
-            <input type="hidden" name="book_id" value="{{ .BookID }}"/>
-            <button class="danger">Eliminar</button>
-          </form>
-        </td>
-      </tr>
-    {{ else }}
-      <tr><td colspan="6" class="empty">No tienes ítems.</td></tr>
-    {{ end }}
-    </tbody>
-  </table>
+  {{if .Cart.Items}}
+  <div class="cart-list">
+    {{range .Cart.Items}}
+    <div class="cart-item card">
+      <div class="cart-info">
+        <img src="{{.CoverUrl}}" alt="{{.Title}}" class="cover"/>
+        <div>
+          <h3>{{.Title}}</h3>
+          <p class="author">ID: {{.BookId}}</p>
+          <p class="price">Precio: {{call $.FormatCOP .UnitPrice.Cents}}</p>
+          <p class="subtotal">Subtotal: {{call $.FormatCOP .LineTotal.Cents}}</p>
+        </div>
+      </div>
 
-  <div class="total">
-    Total (¢): <strong>{{ .Total.String }}</strong>
+      <div class="cart-actions">
+        <form action="/cart/remove" method="post" class="inline">
+          <input type="hidden" name="book_id" value="{{.BookId}}">
+          <input type="hidden" name="qty" value="1">
+          <button class="btn small">-1</button>
+        </form>
+
+        <form action="/cart/remove" method="post" class="inline">
+          <input type="hidden" name="book_id" value="{{.BookId}}">
+          <input type="hidden" name="qty" value="0">
+          <button class="btn danger small">Eliminar</button>
+        </form>
+      </div>
+    </div>
+    {{end}}
   </div>
 
-  <div class="flex">
-    <form action="/clear" method="post">
-      <button class="danger">Vaciar carrito</button>
-    </form>
-    <span class="spacer"></span>
-    <a class="btn" href="/">Agregar más</a>
+  <div class="cart-total">
+    <p>Total: <strong>{{call .FormatCOP .Cart.Total.Cents}}</strong></p>
+    <div class="cart-buttons">
+      <form action="/cart/clear" method="post">
+        <button class="btn danger">Vaciar carrito</button>
+      </form>
+      <a href="/" class="btn primary">Seguir comprando</a>
+    </div>
   </div>
+  {{else}}
+  <div class="card empty-cart">
+    <h3>Tu carrito está vacío 😕</h3>
+    <a href="/" class="btn primary">Explorar catálogo</a>
+  </div>
+  {{end}}
 </section>
-{{ end }}
-{{ template "layout.html" . }}
+{{end}}

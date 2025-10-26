@@ -1,22 +1,24 @@
-FROM golang:1.24 AS build
+FROM golang:1.24-alpine AS build
 WORKDIR /app
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+RUN apk add --no-cache gcc musl-dev
 
 COPY go.mod go.sum ./
 RUN go mod download
-
-COPY Backend/src/user/ ./Backend/src/user/
 COPY proto/gen ./proto/gen
+COPY Backend/src/user/ ./Backend/src/user/
 
 WORKDIR /app/Backend/src/user/src
-RUN go build -o /bin/user-service .
+RUN CGO_ENABLED=1 go build -o /bin/user-service .
 
-
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM alpine:3.18
 WORKDIR /srv
-USER nonroot:nonroot
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    mkdir -p /data && \
+    chown -R appuser:appgroup /data /srv
 
 COPY --from=build /bin/user-service /srv/user-service
+USER appuser:appgroup
 VOLUME ["/data"]
 
 ENV USER_GRPC_PORT=50055 \
