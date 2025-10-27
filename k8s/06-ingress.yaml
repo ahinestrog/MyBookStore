@@ -59,3 +59,55 @@ spec:
             name: rabbitmq-management
             port:
               number: 15672
+  - host: localhost
+    http:
+      paths:
+      - path: /user
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-user
+            port:
+              number: 8080
+      - path: /catalog
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-catalog
+            port:
+              number: 8081
+      - path: /cart
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-cart
+            port:
+              number: 8085
+      - path: /inventory
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-inventory
+            port:
+              number: 8082
+      - path: /order
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-order
+            port:
+              number: 8083
+      - path: /payment
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-payment
+            port:
+              number: 8084
+      - path: /rabbitmq
+        pathType: Prefix
+        backend:
+          service:
+            name: rabbitmq-management
+            port:
+              number: 15672

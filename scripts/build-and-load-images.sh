@@ -1,76 +1,70 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Script para construir todas las imágenes Docker y cargarlas en Kind
-set -e
+set -euo pipefail
 
-CLUSTER_NAME="kind"
-ROOT_DIR="/mnt/c/Users/$(whoami)/Ubuntu/Topicos\ especiales\ en\ Telematica/MyBookStore"
-IMAGE_TAG="latest"
+# Permite sobreescribir por variable de entorno
+CLUSTER_NAME=${CLUSTER_NAME:-mybookstore}
+IMAGE_TAG=${IMAGE_TAG:-latest}
+
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 
 echo "🏗️  Construyendo imágenes Docker para MyBookStore..."
 
-# Lista de servicios backend
+# Lista de servicios
 BACKEND_SERVICES=("user" "catalog" "inventory" "cart" "order" "payment")
-
-# Lista de servicios frontend  
 FRONTEND_SERVICES=("user" "catalog" "inventory" "cart" "order" "payment")
 
-# Función para construir imagen backend
 build_backend_image() {
-    local service=$1
-    echo "🔨 Construyendo imagen backend: $service"
-    
-    docker build -t mybookstore-$service-backend:$IMAGE_TAG \
-        -f Backend/src/$service/Dockerfile \
-        .
-    
-    echo "📦 Cargando imagen mybookstore-$service-backend:$IMAGE_TAG en Kind..."
-    kind load docker-image mybookstore-$service-backend:$IMAGE_TAG --name $CLUSTER_NAME
+    local service="$1"
+    local df="$ROOT_DIR/Backend/src/${service}/Dockerfile"
+    local tag="mybookstore-${service}-backend:${IMAGE_TAG}"
+    echo "🔨 Construyendo imagen backend: $service (tag: $tag)"
+    docker build -t "$tag" -f "$df" "$ROOT_DIR"
+    echo "📦 Cargando imagen $tag en Kind ($CLUSTER_NAME)..."
+    kind load docker-image "$tag" --name "$CLUSTER_NAME"
 }
 
-# Función para construir imagen frontend
 build_frontend_image() {
-    local service=$1
-    echo "🔨 Construyendo imagen frontend: $service"
-    
-    docker build -t mybookstore-$service-frontend:$IMAGE_TAG \
-        -f Frontend/src/$service/Dockerfile \
-        .
-    
-    echo "📦 Cargando imagen mybookstore-$service-frontend:$IMAGE_TAG en Kind..."
-    kind load docker-image mybookstore-$service-frontend:$IMAGE_TAG --name $CLUSTER_NAME
+    local service="$1"
+    local df="$ROOT_DIR/Frontend/src/${service}/Dockerfile"
+    local tag="mybookstore-${service}-frontend:${IMAGE_TAG}"
+    echo "🔨 Construyendo imagen frontend: $service (tag: $tag)"
+    docker build -t "$tag" -f "$df" "$ROOT_DIR"
+    echo "📦 Cargando imagen $tag en Kind ($CLUSTER_NAME)..."
+    kind load docker-image "$tag" --name "$CLUSTER_NAME"
 }
 
-# Verificar que Kind esté corriendo
-if ! kind get clusters | grep -q "^$CLUSTER_NAME$"; then
-    echo "❌ Cluster Kind '$CLUSTER_NAME' no encontrado. Créalo primero con:"
-    echo "   kind create cluster --name $CLUSTER_NAME"
+# Verificar que el cluster existe
+if ! kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
+    echo "❌ Cluster Kind '${CLUSTER_NAME}' no encontrado. Créalo primero con:"
+    echo "   kind create cluster --config ${ROOT_DIR}/kind-config.yaml"
     exit 1
 fi
 
-echo "✅ Cluster Kind '$CLUSTER_NAME' encontrado"
+echo "✅ Cluster Kind '${CLUSTER_NAME}' encontrado"
 
-# Construir imágenes backend
 echo "🏗️  Construyendo servicios backend..."
 for service in "${BACKEND_SERVICES[@]}"; do
-    build_backend_image $service
+    build_backend_image "$service"
 done
 
-# Construir imágenes frontend
 echo "🏗️  Construyendo servicios frontend..."
 for service in "${FRONTEND_SERVICES[@]}"; do
-    build_frontend_image $service
+    build_frontend_image "$service"
 done
 
 echo "✅ Todas las imágenes han sido construidas y cargadas en Kind!"
-echo ""
+echo
 echo "📋 Imágenes disponibles:"
 for service in "${BACKEND_SERVICES[@]}"; do
-    echo "   - mybookstore-$service-backend:$IMAGE_TAG"
+    echo "   - mybookstore-${service}-backend:${IMAGE_TAG}"
 done
 for service in "${FRONTEND_SERVICES[@]}"; do
-    echo "   - mybookstore-$service-frontend:$IMAGE_TAG"
+    echo "   - mybookstore-${service}-frontend:${IMAGE_TAG}"
 done
 
-echo ""
-echo "🎯 Siguiente paso: kubectl apply -f k8s/"
+echo
+echo "🎯 Si ya aplicaste los manifiestos, reinicia los deployments para que tomen las imágenes:"
+echo "   kubectl rollout restart deploy -n mybookstore -l tier=backend"
+echo "   kubectl rollout restart deploy -n mybookstore -l tier=frontend"
