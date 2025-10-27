@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-inventory
+  namespace: mybookstore
+  labels:
+    app: frontend-inventory
+    tier: frontend
+spec:
+  type: NodePort
+  ports:
+  - port: 8082
+    targetPort: 8082
+    nodePort: 30082
+    name: http
+  selector:
+    app: frontend-inventory

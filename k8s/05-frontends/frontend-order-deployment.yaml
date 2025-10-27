@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-order
+  namespace: mybookstore
+  labels:
+    app: frontend-order
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-order
+  template:
+    metadata:
+      labels:
+        app: frontend-order
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend-order
+        image: mybookstore-order-frontend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8083
+          name: http
+        envFrom:
+        - configMapRef:
+            name: mybookstore-config
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8083
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "25m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"

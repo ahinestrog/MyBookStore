@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment
+  namespace: mybookstore
+  labels:
+    app: payment
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment
+  template:
+    metadata:
+      labels:
+        app: payment
+        tier: backend
+    spec:
+      containers:
+      - name: payment
+        image: mybookstore-payment-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 50053
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: mybookstore-config
+        volumeMounts:
+        - name: payment-storage
+          mountPath: /data
+        livenessProbe:
+          tcpSocket:
+            port: 50053
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 50053
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: payment-storage
+        emptyDir: {}

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+  namespace: mybookstore
+  labels:
+    app: cart
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cart
+  template:
+    metadata:
+      labels:
+        app: cart
+        tier: backend
+    spec:
+      containers:
+      - name: cart
+        image: mybookstore-cart-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 50050
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: mybookstore-config
+        volumeMounts:
+        - name: cart-storage
+          mountPath: /data
+        livenessProbe:
+          tcpSocket:
+            port: 50050
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 50050
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: cart-storage
+        emptyDir: {}

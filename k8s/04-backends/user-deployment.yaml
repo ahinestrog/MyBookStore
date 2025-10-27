@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user
+  namespace: mybookstore
+  labels:
+    app: user
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user
+  template:
+    metadata:
+      labels:
+        app: user
+        tier: backend
+    spec:
+      containers:
+      - name: user
+        image: mybookstore-user-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 50055
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: mybookstore-config
+        volumeMounts:
+        - name: user-storage
+          mountPath: /data
+        livenessProbe:
+          tcpSocket:
+            port: 50055
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 50055
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "25m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: user-storage
+        emptyDir: {}

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory
+  namespace: mybookstore
+  labels:
+    app: inventory
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory
+  template:
+    metadata:
+      labels:
+        app: inventory
+        tier: backend
+    spec:
+      containers:
+      - name: inventory
+        image: mybookstore-inventory-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 50052
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: mybookstore-config
+        volumeMounts:
+        - name: inventory-storage
+          mountPath: /data
+        livenessProbe:
+          tcpSocket:
+            port: 50052
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 50052
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: inventory-storage
+        emptyDir: {}
