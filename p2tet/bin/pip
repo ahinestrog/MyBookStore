@@ -1,4 +1,6 @@
-#!/home/alejo/dev/topicosTelematica/MyBookStore/p2tet/bin/python3
+#!/bin/sh
+'''exec' "/home/samuel/dev/Topicos Especiales En Telematica/MyBookStore/p2tet/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

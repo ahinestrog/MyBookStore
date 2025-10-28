@@ -1,31 +1,35 @@
-FROM golang:1.24-alpine AS build
+FROM python:3.11-slim
+
+# Set working directory
 WORKDIR /app
-RUN apk add --no-cache gcc musl-dev
 
-COPY go.mod go.sum ./
-RUN go mod download
-COPY proto/gen ./proto/gen
-COPY Backend/src/user/ ./Backend/src/user/
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/Backend/src/user/src
-RUN CGO_ENABLED=1 go build -o /bin/user-service .
+# Copy requirements from project root and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-FROM alpine:3.18
-WORKDIR /srv
+# Copy source code from the correct path relative to build context
+COPY Backend/src/user/src/ ./src/
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    mkdir -p /data && \
-    chown -R appuser:appgroup /data /srv
+# Copy protobuf generated files
+COPY proto/gen/ ./proto/gen/
 
-COPY --from=build /bin/user-service /srv/user-service
-USER appuser:appgroup
-VOLUME ["/data"]
+# Set PYTHONPATH to find the generated protobuf files
+ENV PYTHONPATH=/app:/app/proto/gen
 
-ENV USER_GRPC_PORT=50055 \
-    USER_DB_PATH=/data/user.db \
-    USER_LOG_LEVEL=info \
-    RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/ \
-    EVENTS_EXCHANGE=mybookstore.events
+# Create data directory for SQLite database
+RUN mkdir -p /data
 
+# Expose gRPC port
 EXPOSE 50055
-ENTRYPOINT ["/srv/user-service"]
+ENV USER_GRPC_PORT=50055
+ENV USER_DB_PATH=/data/user.db
+ENV RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+ENV SERVICE_ENV=production
+
+# Run the service
+CMD ["python", "-m", "src.main"]

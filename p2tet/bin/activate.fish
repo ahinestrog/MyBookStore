@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/alejo/dev/topicosTelematica/MyBookStore/p2tet
+set -gx VIRTUAL_ENV '/home/samuel/dev/Topicos Especiales En Telematica/MyBookStore/p2tet'
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH
