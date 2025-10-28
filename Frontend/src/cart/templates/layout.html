@@ -4,19 +4,19 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>{{block "title" .}}MyBookStore - Carrito{{end}}</title>
-  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="stylesheet" href="static/style.css"/>
 </head>
 <body>
   <header class="navbar">
-    <a class="brand" href="/">📚 MyBookStore</a>
+  <a class="brand" href="/catalog/">📚 MyBookStore</a>
     <form class="search" action="/" method="get">
       <input type="text" name="q" placeholder="Buscar título o autor…" value="{{.Query}}">
       <button type="submit">Buscar</button>
     </form>
     <nav class="navlinks">
-      <a href="/">🏠 Catálogo</a>
-      <a href="/cart" class="active">🛒 Carrito</a>
-      <a href="/orders">📦 Órdenes</a>
+  <a href="/catalog/">🏠 Catálogo</a>
+  <a href="/cart/" class="active">🛒 Carrito</a>
+  <a href="/order/">📦 Órdenes</a>
     </nav>
   </header>
 

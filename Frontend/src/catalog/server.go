@@ -125,7 +125,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 				tryPath := "static" + cover
 				if f, err := staticFS.Open(tryPath); err == nil {
 					f.Close()
-					finalCover = "/static" + cover
+					finalCover = "static" + cover
 				} else {
 					// fallback to a remote placeholder if image not embedded
 					finalCover = "https://via.placeholder.com/200x300?text=Cover"

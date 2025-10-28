@@ -4,15 +4,15 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>{{block "title" .}}{{.Title}}{{end}} · MyBookStore</title>
-  <link rel="stylesheet" href="/static/payment.css"/>
+  <link rel="stylesheet" href="static/payment.css"/>
 </head>
 <body>
   <header class="navbar">
-    <a class="brand" href="/">📚 MyBookStore</a>
+    <a class="brand" href="/catalog/">📚 MyBookStore</a>
     <nav class="navlinks">
-      <a href="/catalog">📚 Catálogo</a>
-      <a href="/cart">🛒 Carrito</a>
-      <a href="/order">📦 Órdenes</a>
+      <a href="/catalog/">📚 Catálogo</a>
+      <a href="/cart/">🛒 Carrito</a>
+      <a href="/order/">📦 Órdenes</a>
       <a class="active" href="/payment/status">💳 Pagos</a>
     </nav>
   </header>

@@ -1,59 +1,60 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mybookstore-ingress
+  name: mybookstore-ingress-prefix
   namespace: mybookstore
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
   - host: mybookstore.local
     http:
       paths:
-      - path: /user
-        pathType: Prefix
+      - path: /user(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend-user
             port:
               number: 8080
-      - path: /catalog
-        pathType: Prefix
+      - path: /catalog(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend-catalog
             port:
               number: 8081
-      - path: /cart
-        pathType: Prefix
+      - path: /cart(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend-cart
             port:
               number: 8085
-      - path: /inventory
-        pathType: Prefix
+      - path: /inventory(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend-inventory
             port:
               number: 8082
-      - path: /order
-        pathType: Prefix
+      - path: /order(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend-order
             port:
               number: 8083
-      - path: /payment
-        pathType: Prefix
+      - path: /payment(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend-payment
             port:
               number: 8084
-      - path: /rabbitmq
-        pathType: Prefix
+      - path: /rabbitmq(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: rabbitmq-management
@@ -62,49 +63,127 @@ spec:
   - host: localhost
     http:
       paths:
-      - path: /user
+      - path: /user(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: frontend-user
+            port:
+              number: 8080
+      - path: /catalog(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: frontend-catalog
+            port:
+              number: 8081
+      - path: /cart(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: frontend-cart
+            port:
+              number: 8085
+      - path: /inventory(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: frontend-inventory
+            port:
+              number: 8082
+      - path: /order(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: frontend-order
+            port:
+              number: 8083
+      - path: /payment(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: frontend-payment
+            port:
+              number: 8084
+      - path: /rabbitmq(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: rabbitmq-management
+            port:
+              number: 15672
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mybookstore-ingress-subdomains
+  namespace: mybookstore
+spec:
+  rules:
+  - host: user.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-user
             port:
               number: 8080
-      - path: /catalog
+  - host: catalog.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-catalog
             port:
               number: 8081
-      - path: /cart
+  - host: cart.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-cart
             port:
               number: 8085
-      - path: /inventory
+  - host: inventory.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-inventory
             port:
               number: 8082
-      - path: /order
+  - host: order.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-order
             port:
               number: 8083
-      - path: /payment
+  - host: payment.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-payment
             port:
               number: 8084
-      - path: /rabbitmq
+  - host: rabbitmq.mybookstore.local
+    http:
+      paths:
+      - path: /
         pathType: Prefix
         backend:
           service:
