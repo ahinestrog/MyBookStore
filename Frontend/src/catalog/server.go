@@ -13,6 +13,7 @@ import (
 
 	catalogpb "github.com/ahinestrog/mybookstore/proto/gen/catalog"
 	commonpb "github.com/ahinestrog/mybookstore/proto/gen/common"
+	inventorypb "github.com/ahinestrog/mybookstore/proto/gen/inventory"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -27,6 +28,7 @@ type Server struct {
 	tplList *template.Template
 	tplBook *template.Template
 	client  catalogpb.CatalogClient
+	invCli  inventorypb.InventoryClient
 }
 
 func main() {
@@ -41,6 +43,19 @@ func main() {
 	defer conn.Close()
 	client := catalogpb.NewCatalogClient(conn)
 
+	// Inventory gRPC (for availability on book page)
+	// Prefer INVENTORY_SERVICE_ADDR over INVENTORY_GRPC_ADDR
+	invAddr := os.Getenv("INVENTORY_SERVICE_ADDR")
+	if invAddr == "" {
+		invAddr = getenv("INVENTORY_GRPC_ADDR", "inventory:50052")
+	}
+	invConn, err := grpc.Dial(invAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("dial inventory grpc (%s): %v", invAddr, err)
+	}
+	defer invConn.Close()
+	invClient := inventorypb.NewInventoryClient(invConn)
+
 	// Parse templates
 	funcs := template.FuncMap{
 		"add":   func(a, b int32) int32 { return a + b },
@@ -52,7 +67,7 @@ func main() {
 	tplList := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/index.html"))
 	tplBook := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/book.html"))
 
-	s := &Server{tplList: tplList, tplBook: tplBook, client: client}
+	s := &Server{tplList: tplList, tplBook: tplBook, client: client, invCli: invClient}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleIndex)
@@ -61,7 +76,7 @@ func main() {
 	// static
 	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
 
-	log.Printf("Catalog Frontend listening on %s (Catalog gRPC → %s)", addr, grpcAddr)
+	log.Printf("Catalog Frontend listening on %s (Catalog gRPC → %s, Inventory gRPC → %s)", addr, grpcAddr, invAddr)
 	if err := http.ListenAndServe(addr, withLog(mux)); err != nil {
 		log.Fatal(err)
 	}
@@ -142,10 +157,12 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Query   string
-		Items   []listItem
-		Page    *commonpb.PageResponse
-		PageURL func(int) string
+		Query    string
+		Items    []listItem
+		Page     *commonpb.PageResponse
+		PageURL  func(int) string
+		LoggedIn bool
+		UserName string
 	}{
 		Query: q,
 		Items: items,
@@ -154,8 +171,11 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 			qs := r.URL.Query()
 			qs.Set("page", strconv.Itoa(p))
 			qs.Set("page_size", strconv.Itoa(size))
-			return "/?" + qs.Encode()
+			// Use relative URL to keep current path prefix (e.g., /catalog)
+			return "?" + qs.Encode()
 		},
+		LoggedIn: cookieUID(r) != 0,
+		UserName: cookieUName(r),
 	}
 
 	if err := s.tplList.Execute(w, data); err != nil {
@@ -179,11 +199,40 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	finalCover := b.GetCoverUrl()
+	if finalCover == "" {
+		finalCover = "https://via.placeholder.com/200x300?text=Cover"
+	} else if finalCover[0] == '/' {
+		tryPath := "static" + finalCover
+		if f, err := staticFS.Open(tryPath); err == nil {
+			f.Close()
+			finalCover = "/static" + finalCover
+		} else {
+			finalCover = "https://via.placeholder.com/200x300?text=Cover"
+		}
+	}
+	b.CoverUrl = finalCover
+
+	// Fetch availability from inventory
+	avail := int32(-1)
+	if s.invCli != nil {
+		ictx, icancel := context.WithTimeout(ctx, 2*time.Second)
+		defer icancel()
+		if a, err := s.invCli.GetAvailability(ictx, &inventorypb.GetAvailabilityRequest{BookIds: []int64{id}}); err == nil {
+			if len(a.GetItems()) > 0 {
+				avail = a.GetItems()[0].GetAvailableQty()
+			}
+		}
+	}
+
 	data := struct {
 		Query string
 		Book  *catalogpb.Book
 		// helper para formatear dinero: cents → "12.345,67" o "12,345.67" según preferencia
 		FormatCOP func(int64) string
+		LoggedIn  bool
+		UserName  string
+		Available int32
 	}{
 		Query: r.URL.Query().Get("q"),
 		Book:  b,
@@ -192,6 +241,9 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 			pesos := cents / 100
 			return "$ " + formatThousands(pesos)
 		},
+		LoggedIn:  cookieUID(r) != 0,
+		UserName:  cookieUName(r),
+		Available: avail,
 	}
 
 	if err := s.tplBook.Execute(w, data); err != nil {
@@ -254,4 +306,20 @@ func formatThousands(n int64) string {
 		out = "-" + out
 	}
 	return out
+}
+
+// --- login helpers ---
+func cookieUID(r *http.Request) int64 {
+	if c, err := r.Cookie("uid"); err == nil {
+		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {
+			return id
+		}
+	}
+	return 0
+}
+func cookieUName(r *http.Request) string {
+	if c, err := r.Cookie("uname"); err == nil {
+		return c.Value
+	}
+	return ""
 }

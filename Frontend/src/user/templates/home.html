@@ -2,13 +2,48 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Usuarios · MyBookStore</title>
-  <link rel="stylesheet" href="static/styles.css"/>
+  <link rel="stylesheet" href="/user/static/styles.css?v=3"/>
 </head>
 <body>
-  <div class="container">
-    <h1>Usuarios</h1>
-    <p><a class="btn" href="/register">Crear cuenta</a> <a class="btn" href="/login">Iniciar sesión</a></p>
-  </div>
+  <header class="navbar">
+    <a class="brand" href="/catalog/">📚 MyBookStore</a>
+    <form class="search" action="/catalog/" method="get">
+      <input type="text" name="q" placeholder="Buscar libro..." value="">
+      <button type="submit">🔍</button>
+    </form>
+    <nav class="navlinks">
+      <a href="/catalog/">📖 Catálogo</a>
+      <a href="/cart/">🛒 Carrito</a>
+      <a href="/order/">📦 Órdenes</a>
+      {{if .LoggedIn}}
+      <span>👋 {{.UserName}}</span>
+      <a href="/user/logout">Cerrar sesión</a>
+      {{else}}
+      <a href="/user/" class="active">👤 Usuario</a>
+      {{end}}
+      <a href="/inventory/">📊 Inventario</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>👤 Gestión de Usuarios</h2>
+      <p style="color: var(--muted); margin-bottom: 1.5rem;">Administra tu cuenta y perfil en MyBookStore</p>
+      <div style="display: flex; gap: 1rem;">
+        {{if .LoggedIn}}
+          <a class="btn" href="/order/">Ir a mis órdenes</a>
+        {{else}}
+          <a class="btn primary" href="/user/register">Crear cuenta</a>
+          <a class="btn" href="/user/login">Iniciar sesión</a>
+        {{end}}
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>© 2025 MyBookStore · Sistema de Gestión de Librerías</small>
+  </footer>
 </body>
 </html>

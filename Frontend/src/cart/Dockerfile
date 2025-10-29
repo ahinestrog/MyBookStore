@@ -16,6 +16,8 @@ COPY --from=build /bin/cart-gateway /bin/cart-gateway
 COPY --from=build /app/Frontend/src/cart/templates /srv/templates
 COPY --from=build /app/Frontend/src/cart/static    /srv/static
 ENV GATEWAY_HTTP_ADDR=:8085 \
-    CART_GRPC_TARGET=cart:50050
+    CART_GRPC_TARGET=cart:50050 \
+    ORDER_GRPC_TARGET=order:50054 \
+    INVENTORY_GRPC_TARGET=inventory:50052
 EXPOSE 8085
 ENTRYPOINT ["/bin/cart-gateway"]

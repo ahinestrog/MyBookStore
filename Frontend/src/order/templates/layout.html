@@ -4,26 +4,35 @@
   <meta charset="utf-8">
   <title>{{ block "title" . }}MyBookStore · Órdenes{{ end }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="static/style.css">
+  <link rel="stylesheet" href="static/style.css?v=3">
 </head>
 <body>
-  <header class="container">
-  <h1><a href="/order/">MyBookStore</a> · Órdenes</h1>
-  <nav>
-    <a href="/order/">Crear orden</a>
-    <a href="/order/status">Ver estado</a>
-    <a href="/catalog/">Catálogo</a>
-    <a href="/cart/">Carrito</a>
-    <a href="/inventory/">Inventario</a>
-  </nav>
-</header>
+  <header class="navbar">
+    <a class="brand" href="/catalog/">📚 MyBookStore</a>
+    <form class="search" action="/catalog/" method="get">
+      <input type="text" name="q" placeholder="Buscar libro..." value="">
+      <button type="submit">🔍</button>
+    </form>
+    <nav class="navlinks">
+      <a href="/catalog/">📖 Catálogo</a>
+      <a href="/cart/">🛒 Carrito</a>
+      <a href="/order/" class="active">📦 Órdenes</a>
+      {{if .LoggedIn}}
+      <span>👋 {{.UserName}}</span>
+      <a href="/user/logout">Cerrar sesión</a>
+      {{else}}
+      <a href="/user/">👤 Usuario</a>
+      {{end}}
+      <a href="/inventory/">📊 Inventario</a>
+    </nav>
+  </header>
 
-<main class="container">
-  {{ block "content" . }}{{ end }}
-</main>
+  <main class="container">
+    {{ block "content" . }}{{ end }}
+  </main>
 
-<footer class="container foot">
-  <small>Proyecto · gRPC (sincrónico) + RabbitMQ (asíncrono)</small>
-</footer>
+  <footer class="footer">
+    <small>© 2025 MyBookStore · Sistema de Gestión de Librerías</small>
+  </footer>
 </body>
 </html>

@@ -1,7 +1,7 @@
 package main
-import "context"
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	orderpb "github.com/ahinestrog/mybookstore/proto/gen/order"
+	paymentpb "github.com/ahinestrog/mybookstore/proto/gen/payment"
 )
 
 //go:embed templates/*.html
@@ -24,18 +25,18 @@ var tplFS embed.FS
 var staticFS embed.FS
 
 type app struct {
-	addr       string
-	orderAddr  string
-	tpls       *template.Template
-	httpServer *http.Server
+	addr        string
+	orderAddr   string
+	paymentAddr string
+	tpls        *template.Template
+	httpServer  *http.Server
 }
 
 func main() {
 	a := &app{
-		addr:      getEnv("FRONTEND_ADDR", ":8083"),
-		// Default ORDER_SVC_ADDR changed to 50056 to match common local runs
-		// (the backend in this workspace has been observed listening on 50056).
-		orderAddr: getEnv("ORDER_SVC_ADDR", "localhost:50056"),
+		addr:        getEnv("FRONTEND_ADDR", ":8083"),
+		orderAddr:   getEnv("ORDER_SVC_ADDR", "localhost:50056"),
+		paymentAddr: getEnv("PAYMENT_SVC_ADDR", "localhost:50053"),
 	}
 	a.loadTemplates()
 	mux := http.NewServeMux()
@@ -50,7 +51,7 @@ func main() {
 
 	// enlaces rápidos a otras vistas del frontend como el catalogo o el carrito de compras
 	mux.HandleFunc("/catalog", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/catalog/", http.StatusFound) })
-	mux.HandleFunc("/cart",    func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/cart/",    http.StatusFound) })
+	mux.HandleFunc("/cart", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/cart/", http.StatusFound) })
 	mux.HandleFunc("/inventory", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/inventory/", http.StatusFound) })
 
 	a.httpServer = &http.Server{
@@ -58,7 +59,7 @@ func main() {
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	log.Printf("[order-frontend] http listening on %s (order svc: %s)", a.addr, a.orderAddr)
+	log.Printf("[order-frontend] http listening on %s (order svc: %s, payment svc: %s)", a.addr, a.orderAddr, a.paymentAddr)
 	if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
@@ -77,6 +78,13 @@ func (a *app) dialOrder() (*grpc.ClientConn, orderpb.OrderClient, error) {
 	return cc, orderpb.NewOrderClient(cc), nil
 }
 
+func (a *app) dialPayment() (*grpc.ClientConn, paymentpb.PaymentClient, error) {
+	cc, err := grpc.Dial(a.paymentAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, nil, err
+	}
+	return cc, paymentpb.NewPaymentClient(cc), nil
+}
 
 // Función render que ejecuta el layout y las plantillas
 func render(w http.ResponseWriter, tpls *template.Template, layout, name string, data any) {
@@ -98,7 +106,10 @@ func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	data := map[string]any{}
+	data := map[string]any{
+		"LoggedIn": cookieUID(r) != 0,
+		"UserName": cookieUName(r),
+	}
 	render(w, a.tpls, "layout.html", "index.html", data)
 }
 
@@ -133,7 +144,11 @@ func (a *app) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Adaptamos respuesta para la tabla
-	type row struct{ Title string; Qty int32; Unit, Line string }
+	type row struct {
+		Title      string
+		Qty        int32
+		Unit, Line string
+	}
 	rows := make([]row, 0, len(resp.Items))
 	for _, it := range resp.Items {
 		rows = append(rows, row{
@@ -156,8 +171,8 @@ func (a *app) handleCreate(w http.ResponseWriter, r *http.Request) {
 
 // GET /status
 func (a *app) handleStatus(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query().Get("order_id")
-	data := map[string]any{"QueryOrderID": q}
+	q := r.URL.Query().Get("id")
+	data := map[string]any{"QueryOrderID": q, "LoggedIn": cookieUID(r) != 0, "UserName": cookieUName(r)}
 	if q == "" {
 		render(w, a.tpls, "layout.html", "status.html", data)
 		return
@@ -193,6 +208,32 @@ func (a *app) handleStatus(w http.ResponseWriter, r *http.Request) {
 	data["Total"] = centsToStr(resp.GetTotal().GetCents())
 	data["UpdatedUnix"] = resp.GetUpdatedUnix()
 
+	// Check if this is a newly created order (coming from checkout)
+	// If the order status is CREATED and there's no 'from' query param, assume it's just created
+	if resp.GetStatus() == orderpb.OrderStatus_ORDER_STATUS_CREATED && r.URL.Query().Get("from") == "" {
+		data["JustCreated"] = true
+	}
+
+	// Get payment status
+	pcc, pclient, err := a.dialPayment()
+	if err != nil {
+		log.Printf("[order] failed to dial payment service: %v", err)
+		// Continue without payment info
+	} else {
+		defer pcc.Close()
+		pctx, pcancel := timeoutCtx(r.Context(), 3*time.Second)
+		defer pcancel()
+
+		presp, err := pclient.GetPaymentStatus(pctx, &paymentpb.GetPaymentStatusRequest{OrderId: oid})
+		if err != nil {
+			log.Printf("[order] GetPaymentStatus failed: %v", err)
+		} else {
+			data["PaymentState"] = paymentStateToText(presp.GetState())
+			data["ProviderRef"] = presp.GetProviderRef()
+			data["PaymentPending"] = presp.GetState() == paymentpb.PaymentState_PAYMENT_STATE_PENDING
+		}
+	}
+
 	render(w, a.tpls, "layout.html", "status.html", data)
 }
 
@@ -205,6 +246,19 @@ func orderStatusToText(s orderpb.OrderStatus) string {
 	case orderpb.OrderStatus_ORDER_STATUS_CANCELLED:
 		return "CANCELLED"
 	case orderpb.OrderStatus_ORDER_STATUS_FAILED:
+		return "FAILED"
+	default:
+		return "UNSPECIFIED"
+	}
+}
+
+func paymentStateToText(s paymentpb.PaymentState) string {
+	switch s {
+	case paymentpb.PaymentState_PAYMENT_STATE_PENDING:
+		return "PENDING"
+	case paymentpb.PaymentState_PAYMENT_STATE_SUCCEEDED:
+		return "SUCCEEDED"
+	case paymentpb.PaymentState_PAYMENT_STATE_FAILED:
 		return "FAILED"
 	default:
 		return "UNSPECIFIED"
@@ -234,4 +288,20 @@ func getEnv(k, def string) string {
 		return v
 	}
 	return def
+}
+
+// --- login helpers ---
+func cookieUID(r *http.Request) int64 {
+	if c, err := r.Cookie("uid"); err == nil {
+		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {
+			return id
+		}
+	}
+	return 0
+}
+func cookieUName(r *http.Request) string {
+	if c, err := r.Cookie("uname"); err == nil {
+		return c.Value
+	}
+	return ""
 }

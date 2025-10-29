@@ -1,9 +1,6 @@
-#!/usr/bin/env bash
-
 # Script para construir todas las imágenes Docker y cargarlas en Kind
 set -euo pipefail
 
-# Permite sobreescribir por variable de entorno
 CLUSTER_NAME=${CLUSTER_NAME:-mybookstore}
 IMAGE_TAG=${IMAGE_TAG:-latest}
 

@@ -22,7 +22,7 @@ spec:
         image: mybookstore-order-backend:latest
         imagePullPolicy: Never
         ports:
-        - containerPort: 50053
+        - containerPort: 50054
           name: grpc
         envFrom:
         - configMapRef:
@@ -32,12 +32,12 @@ spec:
           mountPath: /data
         livenessProbe:
           tcpSocket:
-            port: 50053
+            port: 50054
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           tcpSocket:
-            port: 50053
+            port: 50054
           initialDelaySeconds: 10
           periodSeconds: 5
         resources:

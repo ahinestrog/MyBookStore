@@ -5,16 +5,18 @@ import (
 	"context"
 
 	cartpb "github.com/ahinestrog/mybookstore/proto/gen/cart"
+	catalogpb "github.com/ahinestrog/mybookstore/proto/gen/catalog"
 	commonpb "github.com/ahinestrog/mybookstore/proto/gen/common"
 )
 
 type CartServer struct {
 	cartpb.UnimplementedCartServer
-	repo CartRepository
+	repo    CartRepository
+	catalog catalogpb.CatalogClient
 }
 
-func NewCartServer(repo CartRepository) *CartServer {
-	return &CartServer{repo: repo}
+func NewCartServer(repo CartRepository, catalog catalogpb.CatalogClient) *CartServer {
+	return &CartServer{repo: repo, catalog: catalog}
 }
 
 func (s *CartServer) GetCart(ctx context.Context, req *commonpb.UserRef) (*cartpb.CartView, error) {
@@ -26,7 +28,11 @@ func (s *CartServer) GetCart(ctx context.Context, req *commonpb.UserRef) (*cartp
 }
 
 func (s *CartServer) AddItem(ctx context.Context, req *cartpb.AddItemRequest) (*cartpb.CartView, error) {
-	c, err := s.repo.AddItem(ctx, req.UserId, req.BookId, "Título temporal", 15000, req.Qty)
+	b, err := s.catalog.GetBook(ctx, &catalogpb.GetBookRequest{Id: req.BookId})
+	if err != nil {
+		return nil, err
+	}
+	c, err := s.repo.AddItem(ctx, req.UserId, req.BookId, b.GetTitle(), b.GetPrice().GetCents(), req.Qty)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +62,9 @@ func toCartView(c *Cart) *cartpb.CartView {
 		line := it.UnitPriceCents * int64(it.Qty)
 		total += line
 		view.Items = append(view.Items, &cartpb.CartItem{
-			BookId: it.BookID,
-			Title:  it.Title,
-			Qty:    it.Qty,
+			BookId:    it.BookID,
+			Title:     it.Title,
+			Qty:       it.Qty,
 			UnitPrice: &commonpb.Money{Cents: it.UnitPriceCents},
 			LineTotal: &commonpb.Money{Cents: line},
 		})

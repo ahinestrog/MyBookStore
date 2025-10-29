@@ -4,36 +4,52 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inventario - MyBookStore</title>
-  <link rel="stylesheet" href="static/style.css">
+  <link rel="stylesheet" href="/inventory/static/style.css?v=3">
 </head>
 <body>
-  <header>
-    <h1>📦 Panel de Inventario</h1>
-    <nav>
-      <a href="/catalog/">Catálogo</a>
-      <a href="/cart/">Carrito</a>
-      <a href="/inventory/" class="active">Inventario</a>
+  <header class="navbar">
+    <a class="brand" href="/catalog/">� MyBookStore</a>
+    <form class="search" action="/catalog/" method="get">
+      <input type="text" name="q" placeholder="Buscar libro..." value="">
+      <button type="submit">🔍</button>
+    </form>
+    <nav class="navlinks">
+      <a href="/catalog/">📖 Catálogo</a>
+      <a href="/cart/">🛒 Carrito</a>
+      <a href="/order/">📦 Órdenes</a>
+      {{if .LoggedIn}}
+      <span>👋 {{.UserName}}</span>
+      <a href="/user/logout">Cerrar sesión</a>
+      {{else}}
+      <a href="/user/">👤 Usuario</a>
+      {{end}}
+      <a href="/inventory/" class="active">📊 Inventario</a>
     </nav>
   </header>
 
-  <main>
-    <section class="search">
-      <h2>Consultar Disponibilidad</h2>
-      <p>Ingresa los IDs de libros separados por coma (ej: <code>1,2,3</code>)</p>
-      <form id="inventoryForm">
-        <input type="text" id="bookIds" placeholder="IDs de libros..." required>
-        <button type="submit">Consultar</button>
+  <main class="container">
+    <section class="card">
+      <h2>📊 Panel de Inventario</h2>
+      <p>Consulta la disponibilidad de libros en el sistema</p>
+    </section>
+
+    <section class="card">
+      <h3>Consultar Disponibilidad</h3>
+      <p style="color: var(--muted); margin-bottom: 1rem;">Ingresa los IDs de libros separados por coma (ej: <code>1,2,3</code>)</p>
+      <form id="inventoryForm" style="display: flex; gap: 0.5rem;">
+        <input type="text" id="bookIds" placeholder="IDs de libros..." value="{{.Prefill}}" required style="flex: 1;">
+        <button type="submit" class="btn primary">Consultar</button>
       </form>
     </section>
 
-    <section>
-      <h2>Resultados</h2>
-      <table id="results">
+    <section class="card">
+      <h3>Resultados</h3>
+      <table id="results" style="width: 100%; border-collapse: collapse;">
         <thead>
-          <tr>
-            <th>ID Libro</th>
-            <th>Cantidad Disponible</th>
-            <th>Estado</th>
+          <tr style="border-bottom: 1px solid var(--line);">
+            <th style="padding: 0.8rem; text-align: left;">ID Libro</th>
+            <th style="padding: 0.8rem; text-align: left;">Cantidad Disponible</th>
+            <th style="padding: 0.8rem; text-align: left;">Estado</th>
           </tr>
         </thead>
         <tbody>
@@ -42,22 +58,23 @@
     </section>
   </main>
 
-  <footer>
-    <p>© 2025 MyBookStore</p>
+  <footer class="footer">
+    <small>© 2025 MyBookStore · Sistema de Gestión de Librerías</small>
   </footer>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const form = document.getElementById("inventoryForm");
       const tbody = document.querySelector("#results tbody");
+      const idsInput = document.getElementById("bookIds");
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const ids = document.getElementById("bookIds").value.trim();
+        const ids = idsInput.value.trim();
         if (!ids) return alert("Por favor ingresa IDs.");
 
         try {
-          const resp = await fetch("/api/inventory?ids=" + encodeURIComponent(ids));
+          const resp = await fetch("/inventory/api/inventory?ids=" + encodeURIComponent(ids));
           if (!resp.ok) throw new Error("Error en servidor");
           const data = await resp.json();
           render(data.items || []);
@@ -89,6 +106,14 @@
 
       function statusText(s) {
         return s === "ok" ? "En stock" : s === "low" ? "Pocas unidades" : "Agotado";
+      }
+
+      // Auto-disparar consulta si viene con ?ids= en la URL
+      const url = new URL(window.location.href);
+      const pre = url.searchParams.get("ids");
+      if (pre && pre.trim() !== "") {
+        idsInput.value = pre;
+        form.requestSubmit();
       }
     });
   </script>

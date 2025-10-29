@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MyBookStore - Inventario</title>
+  <link rel="stylesheet" href="static/style.css?v=3"/>
+</head>
+<body>
+  <header class="navbar">
+    <a class="brand" href="/catalog/">📚 MyBookStore</a>
+    <form class="search" action="/catalog/" method="get">
+      <input type="text" name="q" placeholder="Buscar libro..." value="">
+      <button type="submit">🔍</button>
+    </form>
+    <nav class="navlinks">
+      <a href="/catalog/">📖 Catálogo</a>
+      <a href="/cart/">🛒 Carrito</a>
+      <a href="/order/">📦 Órdenes</a>
+      <a href="/user/">👤 Usuario</a>
+      <a href="/inventory/" class="active">📊 Inventario</a>
+    </nav>
+  </header>
+
+  <main class="container">

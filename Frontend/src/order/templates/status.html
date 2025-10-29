@@ -1,24 +1,73 @@
 {{ define "title" }}Estado de orden · MyBookStore{{ end }}
 {{ define "content" }}
+{{ if .PaymentPending }}
+<meta http-equiv="refresh" content="3">
+{{ end }}
 <section class="card">
-  <h2>Ver estado de orden</h2>
-  <form method="get" action="/status">
-    <label>Order ID
-      <input type="number" name="order_id" min="1" value="{{ .QueryOrderID }}" required placeholder="e.g. 12">
-    </label>
-    <button type="submit">Consultar</button>
-  </form>
+  <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+    <h2 style="margin: 0;">📦 Orden #{{ .OrderID }}</h2>
+  </div>
 
   {{ if .Error }}
-    <p class="error">⚠ {{ .Error }}</p>
+    <div style="background: #3d1a1a; border: 1px solid #6b2c2c; color: #ffb3b3; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+      ⚠ {{ .Error }}
+    </div>
   {{ end }}
 
   {{ if .Found }}
-    <hr>
-    <p><strong>ID:</strong> {{ .OrderID }}</p>
-    <p><strong>Estado:</strong> {{ .Status }}</p>
-    <p><strong>Total:</strong> {{ .Total }}</p>
-    <p><small>Última actualización (unix): {{ .UpdatedUnix }}</small></p>
+    {{ if .JustCreated }}
+    <div style="background: #1a2e1f; border: 1px solid #2d5a3a; color: #9de8ad; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem;">
+      <p style="margin: 0; font-size: 1.1rem;"><strong>✅ ¡Orden creada exitosamente!</strong></p>
+      <p style="margin: 0.5rem 0 0 0;">Tu número de orden es: <strong style="font-size: 1.2rem; color: #61ff8f;">#{{ .OrderID }}</strong></p>
+    </div>
+    {{ end }}
+    <div class="order-info">
+      <p><strong>Estado de orden:</strong> <span style="color: var(--acc);">{{ .Status }}</span></p>
+      <p><strong>Total:</strong> <span style="color: #61b2ff; font-size: 1.1rem;">{{ .Total }}</span></p>
+      
+      {{ if .PaymentState }}
+      <hr style="border: none; border-top: 1px solid var(--line); margin: 1.5rem 0;">
+      <h3 style="margin-bottom: 1rem;">💳 Estado de pago</h3>
+      {{ if eq .PaymentState "PENDING" }}
+        <div style="background: #2a2416; border: 1px solid #5a4a2c; color: #ffdc7a; padding: 1rem; border-radius: 10px;">
+          <p style="margin: 0;">⏳ Procesando pago...</p>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">La página se actualizará automáticamente cada 3 segundos</p>
+        </div>
+      {{ else if eq .PaymentState "SUCCEEDED" }}
+        <div style="background: #1a2e1f; border: 1px solid #2d5a3a; color: #9de8ad; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+          <p style="margin: 0; font-size: 1.1rem;"><strong>✅ ¡Pago exitoso!</strong></p>
+          <p style="margin: 0.25rem 0 0 0;">Tu número de orden es: <strong style="font-size: 1.1rem; color: #61ff8f;">#{{ .OrderID }}</strong></p>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; opacity: 0.8;">Referencia de pago: {{ .ProviderRef }}</p>
+        </div>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+          <a href="/catalog/" class="btn primary">📖 Volver al catálogo</a>
+          <a href="/cart/" class="btn">🛒 Ver carrito</a>
+        </div>
+      {{ else if eq .PaymentState "FAILED" }}
+        <div style="background: #3d1a1a; border: 1px solid #6b2c2c; color: #ffb3b3; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+          <p style="margin: 0; font-size: 1.1rem;"><strong>❌ El pago falló</strong></p>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; opacity: 0.8;">Referencia: {{ .ProviderRef }}</p>
+        </div>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+          <a href="/cart/" class="btn primary">🛒 Volver al carrito</a>
+          <a href="/catalog/" class="btn">📖 Continuar comprando</a>
+        </div>
+      {{ else }}
+        <div style="background: #1f242c; border: 1px solid #2a3038; color: var(--muted); padding: 1rem; border-radius: 10px;">
+          <p style="margin: 0;">Estado de pago: <strong>{{ .PaymentState }}</strong></p>
+        </div>
+      {{ end }}
+      {{ end }}
+      
+      <p><small>Última actualización (unix): {{ .UpdatedUnix }}</small></p>
+    </div>
+  {{ else }}
+    <form method="get" action="/status">
+      <label>Order ID
+        <input type="number" name="id" min="1" value="{{ .QueryOrderID }}" required placeholder="e.g. 12">
+      </label>
+      <button type="submit">Consultar</button>
+    </form>
   {{ end }}
 </section>
 {{ end }}

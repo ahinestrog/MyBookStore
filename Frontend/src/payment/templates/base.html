@@ -4,16 +4,26 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>{{block "title" .}}{{.Title}}{{end}} · MyBookStore</title>
-  <link rel="stylesheet" href="static/payment.css"/>
+  <link rel="stylesheet" href="static/payment.css?v=3"/>
 </head>
 <body>
   <header class="navbar">
     <a class="brand" href="/catalog/">📚 MyBookStore</a>
+    <form class="search" action="/catalog/" method="get">
+      <input type="text" name="q" placeholder="Buscar libro..." value="">
+      <button type="submit">🔍</button>
+    </form>
     <nav class="navlinks">
-      <a href="/catalog/">📚 Catálogo</a>
+      <a href="/catalog/">📖 Catálogo</a>
       <a href="/cart/">🛒 Carrito</a>
       <a href="/order/">📦 Órdenes</a>
-      <a class="active" href="/payment/status">💳 Pagos</a>
+      {{if .LoggedIn}}
+      <span>👋 {{.UserName}}</span>
+      <a href="/user/logout">Cerrar sesión</a>
+      {{else}}
+      <a href="/user/">👤 Usuario</a>
+      {{end}}
+      <a href="/inventory/">📊 Inventario</a>
     </nav>
   </header>
 
@@ -22,7 +32,7 @@
   </main>
 
   <footer class="footer">
-    <small>Estado del pago: {{since .UpdatedUnix}}</small>
+    <small>© 2025 MyBookStore · Sistema de Gestión de Librerías</small>
   </footer>
 </body>
 </html>

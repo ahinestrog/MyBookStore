@@ -7,29 +7,35 @@
   <div class="alert success">{{.Msg}}</div>
   {{end}}
 
-  {{if .Cart.Items}}
+  {{if .Items}}
   <div class="cart-list">
-    {{range .Cart.Items}}
+    {{range .Items}}
     <div class="cart-item card">
       <div class="cart-info">
-        <img src="{{.CoverUrl}}" alt="{{.Title}}" class="cover"/>
         <div>
           <h3>{{.Title}}</h3>
-          <p class="author">ID: {{.BookId}}</p>
-          <p class="price">Precio: {{call $.FormatCOP .UnitPrice.Cents}}</p>
-          <p class="subtotal">Subtotal: {{call $.FormatCOP .LineTotal.Cents}}</p>
+          <p class="author">ID: {{.BookID}}</p>
+          <p class="qty">Cantidad: <strong>{{.Qty}}</strong></p>
+          <p class="price">Precio: {{call $.FormatCOP .Unit.Cents}}</p>
+          <p class="subtotal">Subtotal: {{call $.FormatCOP .Line.Cents}}</p>
         </div>
       </div>
 
       <div class="cart-actions">
-        <form action="/cart/remove" method="post" class="inline">
-          <input type="hidden" name="book_id" value="{{.BookId}}">
+        <form action="add" method="post" class="inline">
+          <input type="hidden" name="book_id" value="{{.BookID}}">
+          <input type="hidden" name="qty" value="1">
+          <button class="btn small">+1</button>
+        </form>
+
+        <form action="remove" method="post" class="inline">
+          <input type="hidden" name="book_id" value="{{.BookID}}">
           <input type="hidden" name="qty" value="1">
           <button class="btn small">-1</button>
         </form>
 
-        <form action="/cart/remove" method="post" class="inline">
-          <input type="hidden" name="book_id" value="{{.BookId}}">
+        <form action="remove" method="post" class="inline">
+          <input type="hidden" name="book_id" value="{{.BookID}}">
           <input type="hidden" name="qty" value="0">
           <button class="btn danger small">Eliminar</button>
         </form>
@@ -39,19 +45,28 @@
   </div>
 
   <div class="cart-total">
-    <p>Total: <strong>{{call .FormatCOP .Cart.Total.Cents}}</strong></p>
+    <p>Total: <strong>{{call .FormatCOP .Total.Cents}}</strong></p>
     <div class="cart-buttons">
-      <form action="/cart/clear" method="post">
+      {{if .LoggedIn}}
+        <form action="checkout" method="post">
+          <button class="btn primary">💳 Comprar</button>
+        </form>
+      {{else}}
+        <a class="btn primary" href="/user/login?from=/cart/">Inicia sesión para comprar</a>
+      {{end}}
+      <form action="clear" method="post">
         <button class="btn danger">Vaciar carrito</button>
       </form>
-      <a href="/" class="btn primary">Seguir comprando</a>
+      <a href="/catalog/" class="btn">Seguir comprando</a>
     </div>
   </div>
   {{else}}
   <div class="card empty-cart">
     <h3>Tu carrito está vacío 😕</h3>
-    <a href="/" class="btn primary">Explorar catálogo</a>
+    <a href="/catalog/" class="btn primary">Explorar catálogo</a>
   </div>
   {{end}}
 </section>
 {{end}}
+
+{{ template "layout.html" . }}

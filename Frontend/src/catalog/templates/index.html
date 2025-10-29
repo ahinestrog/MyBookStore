@@ -5,14 +5,15 @@
   <div class="grid">
     {{range .Items}}
       <article class="card">
-        <a class="cover" href="/book?id={{.Id}}">
+        <a class="cover" href="book?id={{.Id}}">
           <img src="{{.CoverUrl}}" alt="Portada de {{.Title}}">
         </a>
         <div class="card-body">
-          <h3 class="title"><a href="/book?id={{.Id}}">{{.Title}}</a></h3>
-          <p class="author">{{.Author}}</p>
+          <h3 class="title"><a href="book?id={{.Id}}">{{.Title}}</a></h3>
+          <p class="author">{{.Author}} · <small>ID: {{.Id}}</small></p>
           <p class="price">{{.PriceStr}}</p>
-          <a class="btn" href="/book?id={{.Id}}">Ver</a>
+          <a class="btn" href="book?id={{.Id}}">Ver</a>
+          <a class="btn" href="/inventory/?ids={{.Id}}">Inventario</a>
         </div>
       </article>
     {{end}}

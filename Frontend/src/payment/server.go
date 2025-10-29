@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	paymentpb "github.com/ahinestrog/mybookstore/proto/gen/payment"
@@ -143,8 +144,10 @@ func (s *Server) handlePaymentStatus(w http.ResponseWriter, r *http.Request) {
 		ProviderRef string
 		UpdatedUnix int64
 		ErrorMsg    string
+		LoggedIn    bool
+		UserName    string
 	}
-	data := viewData{Title: "Payment Status"}
+	data := viewData{Title: "Payment Status", LoggedIn: cookieUID(r) != 0, UserName: cookieUName(r)}
 
 	if q := r.URL.Query().Get("order_id"); q != "" {
 		data.QueryOrder = q
@@ -198,4 +201,20 @@ func main() {
 	if err := http.ListenAndServe(addr, srv.routes()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// --- login helpers ---
+func cookieUID(r *http.Request) int64 {
+	if c, err := r.Cookie("uid"); err == nil {
+		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {
+			return id
+		}
+	}
+	return 0
+}
+func cookieUName(r *http.Request) string {
+	if c, err := r.Cookie("uname"); err == nil {
+		return c.Value
+	}
+	return ""
 }

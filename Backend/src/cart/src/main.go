@@ -1,5 +1,4 @@
 package main
-import cartpb "github.com/ahinestrog/mybookstore/proto/gen/cart"
 
 import (
 	"context"
@@ -7,7 +6,10 @@ import (
 	"net"
 	"os"
 
+	cartpb "github.com/ahinestrog/mybookstore/proto/gen/cart"
+	catalogpb "github.com/ahinestrog/mybookstore/proto/gen/catalog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -20,9 +22,17 @@ func main() {
 	}
 
 	repo := NewSQLiteRepo(db)
-	srv := NewCartServer(repo)
 
-	// puerto configurable vía env CART_GRPC_PORT (por defecto 50050 en .env)
+	// Conexión al servicio de catálogo para obtener título y precio
+	catalogAddr := getenv("CATALOG_GRPC_ADDR", "catalog:50051")
+	catCC, err := grpc.Dial(catalogAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("dial catalog %s: %v", catalogAddr, err)
+	}
+	defer catCC.Close()
+
+	srv := NewCartServer(repo, catalogpb.NewCatalogClient(catCC))
+
 	port := getenv("CART_GRPC_PORT", "50050")
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {

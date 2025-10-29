@@ -6,15 +6,23 @@
   </div>
   <div class="detail-info">
     <h1>{{.Book.Title}}</h1>
-    <p class="author">por {{.Book.Author}}</p>
+    <p class="author">por {{.Book.Author}} · <small>ID: {{.Book.Id}}</small></p>
     <p class="price">{{call .FormatCOP .Book.Price.Cents}}</p>
     <div class="actions">
       <form action="/cart/add" method="post">
         <input type="hidden" name="book_id" value="{{.Book.Id}}">
-        <button class="btn">Añadir al carrito</button>
+        <label for="qty" class="sr-only">Cantidad</label>
+        <input id="qty" name="qty" type="number" min="1" step="1" value="1" required style="width: 6rem; margin-right: .5rem;">
+        {{if gt .Available 0}}
+          <button class="btn">Añadir al carrito</button>
+        {{else}}
+          <button class="btn" disabled>Agotado</button>
+        {{end}}
       </form>
     </div>
     <p class="meta">Publicado: {{.Book.CreatedUnix}}</p>
+    <p class="meta">Disponibilidad: {{if ge .Available 0}}{{.Available}}{{else}}-{{end}}</p>
+    <p class="meta"><a href="/inventory/?ids={{.Book.Id}}">Ver en inventario</a></p>
     <p class="back"><a href="javascript:history.back()">← Volver</a></p>
   </div>
 </article>

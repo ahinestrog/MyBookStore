@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <title>Registro</title>
-  <link rel="stylesheet" href="static/styles.css"/>
+  <link rel="stylesheet" href="/user/static/styles.css?v=3"/>
 </head>
 <body>
 <div class="container">
   <h1>Crear cuenta</h1>
   {{if .Error}}<div class="alert">{{.Error}}</div>{{end}}
-  <form method="post" action="/register" class="form">
+  <form method="post" action="/user/register" class="form">
     <label>Nombre <input name="name" required></label>
     <label>Email <input name="email" type="email" required></label>
     <label>Contraseña <input name="password" type="password" required></label>

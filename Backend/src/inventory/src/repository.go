@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
-	_ "modernc.org/sqlite"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 type Repository struct {
@@ -19,7 +20,7 @@ func NewRepository(dbPath string) (*Repository, error) {
 		return nil, err
 	}
 	db.SetConnMaxIdleTime(2 * time.Minute)
-	db.SetMaxOpenConns(1) 
+	db.SetMaxOpenConns(1)
 
 	r := &Repository{DB: db}
 	if err := r.migrate(context.Background()); err != nil {
@@ -47,23 +48,27 @@ func (r *Repository) Close() error { return r.DB.Close() }
 // seed inicial opcional (para pruebas)
 func (r *Repository) Seed(ctx context.Context) error {
 	tx, err := r.DB.BeginTx(ctx, nil)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer tx.Rollback()
 
 	stmt := `
 INSERT INTO stock(book_id,total_qty,reserved_qty,updated_at)
 VALUES(?,?,?,strftime('%s','now'))
-ON CONFLICT(book_id) DO NOTHING;
+ON CONFLICT(book_id) DO UPDATE SET total_qty=excluded.total_qty, reserved_qty=excluded.reserved_qty, updated_at=strftime('%s','now');
 `
 	inserts := [][]any{
 		{1, 10, 0},
-		{2,  5, 0},
-		{3,  0, 0},
-		{4, 20, 0},
-		{5,  1, 0},
+		{2, 10, 0},
+		{3, 10, 0},
+		{4, 10, 0},
+		{5, 10, 0},
 	}
 	for _, v := range inserts {
-		if _, err := tx.ExecContext(ctx, stmt, v...); err != nil { return err }
+		if _, err := tx.ExecContext(ctx, stmt, v...); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
@@ -71,14 +76,21 @@ ON CONFLICT(book_id) DO NOTHING;
 func (r *Repository) GetAvailability(ctx context.Context, bookIDs []int64) (map[int64]int32, error) {
 	if len(bookIDs) == 0 {
 		rows, err := r.DB.QueryContext(ctx, `SELECT book_id,total_qty,reserved_qty FROM stock`)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		defer rows.Close()
 		out := map[int64]int32{}
 		for rows.Next() {
-			var id int64; var tot, res int32
-			if err := rows.Scan(&id, &tot, &res); err != nil { return nil, err }
+			var id int64
+			var tot, res int32
+			if err := rows.Scan(&id, &tot, &res); err != nil {
+				return nil, err
+			}
 			avail := tot - res
-			if avail < 0 { avail = 0 }
+			if avail < 0 {
+				avail = 0
+			}
 			out[id] = avail
 		}
 		return out, rows.Err()
@@ -88,15 +100,22 @@ func (r *Repository) GetAvailability(ctx context.Context, bookIDs []int64) (map[
 		placeholders(len(bookIDs)) + `)`
 	args := toAny(bookIDs)
 	rows, err := r.DB.QueryContext(ctx, q, args...)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	out := map[int64]int32{}
 	for rows.Next() {
-		var id int64; var tot, res int32
-		if err := rows.Scan(&id, &tot, &res); err != nil { return nil, err }
+		var id int64
+		var tot, res int32
+		if err := rows.Scan(&id, &tot, &res); err != nil {
+			return nil, err
+		}
 		avail := tot - res
-		if avail < 0 { avail = 0 }
+		if avail < 0 {
+			avail = 0
+		}
 		out[id] = avail
 	}
 	return out, rows.Err()
@@ -109,7 +128,9 @@ type OrderItem struct {
 
 func (r *Repository) TryReserve(ctx context.Context, items []OrderItem) error {
 	tx, err := r.DB.BeginTx(ctx, nil)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer tx.Rollback()
 
 	// Valida disponibilidad
@@ -121,7 +142,9 @@ func (r *Repository) TryReserve(ctx context.Context, items []OrderItem) error {
 		if err == sql.ErrNoRows {
 			return ErrNoStockForBook{BookID: it.BookID}
 		}
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		avail := tot - res
 		if avail < it.Qty {
 			return ErrInsufficient{BookID: it.BookID, Need: it.Qty, Avail: avail}
@@ -141,7 +164,9 @@ func (r *Repository) TryReserve(ctx context.Context, items []OrderItem) error {
 
 func (r *Repository) Confirm(ctx context.Context, items []OrderItem) error {
 	tx, err := r.DB.BeginTx(ctx, nil)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer tx.Rollback()
 
 	for _, it := range items {
@@ -152,14 +177,18 @@ SET total_qty = total_qty - ?,
     reserved_qty = reserved_qty - ?,
     updated_at = strftime('%s','now')
 WHERE book_id=?`, it.Qty, it.Qty, it.BookID)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
 
 func (r *Repository) Release(ctx context.Context, items []OrderItem) error {
 	tx, err := r.DB.BeginTx(ctx, nil)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer tx.Rollback()
 
 	for _, it := range items {
@@ -170,7 +199,9 @@ SET reserved_qty = CASE
     ELSE 0 END,
     updated_at = strftime('%s','now')
 WHERE book_id=?`, it.Qty, it.Qty, it.BookID)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
@@ -178,19 +209,26 @@ WHERE book_id=?`, it.Qty, it.Qty, it.BookID)
 // helpers
 func placeholders(n int) string {
 	s := "?"
-	for i := 1; i < n; i++ { s += ",?" }
+	for i := 1; i < n; i++ {
+		s += ",?"
+	}
 	return s
 }
 func toAny[T any](xs []T) []any {
 	out := make([]any, len(xs))
-	for i, v := range xs { out[i] = v }
+	for i, v := range xs {
+		out[i] = v
+	}
 	return out
 }
 
 type ErrNoStockForBook struct{ BookID int64 }
+
 func (e ErrNoStockForBook) Error() string { return "stock inexistente para book_id" }
 
-type ErrInsufficient struct{
-	BookID int64; Need, Avail int32
+type ErrInsufficient struct {
+	BookID      int64
+	Need, Avail int32
 }
+
 func (e ErrInsufficient) Error() string { return "stock insuficiente" }

@@ -23,6 +23,7 @@ RUN chown -R appuser:appgroup /srv/templates /srv/static
 USER appuser:appgroup
 
 ENV FRONTEND_CATALOG_ADDR=:8081 \
-    CATALOG_GRPC_ADDR=catalog:50051
+    CATALOG_GRPC_ADDR=catalog:50051 \
+    INVENTORY_GRPC_ADDR=inventory:50052
 EXPOSE 8081
 ENTRYPOINT ["/srv/catalog-frontend"]
