@@ -62,7 +62,7 @@
       <p><small>Última actualización (unix): {{ .UpdatedUnix }}</small></p>
     </div>
   {{ else }}
-    <form method="get" action="/status">
+    <form method="get" action="/order/status">
       <label>Order ID
         <input type="number" name="id" min="1" value="{{ .QueryOrderID }}" required placeholder="e.g. 12">
       </label>

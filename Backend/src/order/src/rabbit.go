@@ -16,9 +16,13 @@ type Rabbit struct {
 
 func NewRabbit(url, exchange string) (*Rabbit, error) {
 	conn, err := amqp.Dial(url)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	ch, err := conn.Channel()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	if err := ch.ExchangeDeclare(exchange, "topic", true, false, false, false, nil); err != nil {
 		return nil, err
 	}
@@ -26,14 +30,32 @@ func NewRabbit(url, exchange string) (*Rabbit, error) {
 }
 
 func (r *Rabbit) Close() {
-	if r.ch != nil { _ = r.ch.Close() }
-	if r.conn != nil { _ = r.conn.Close() }
+	if r.ch != nil {
+		_ = r.ch.Close()
+	}
+	if r.conn != nil {
+		_ = r.conn.Close()
+	}
 }
 
 func (r *Rabbit) PublishJSON(routingKey string, v any) error {
 	body, err := json.Marshal(v)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return r.ch.PublishWithContext(context.Background(), r.exchange, routingKey, false, false, amqp.Publishing{
+		ContentType: "application/json",
+		Body:        body,
+	})
+}
+
+// PublishJSONToQueue publishes to a direct queue (default exchange "")
+func (r *Rabbit) PublishJSONToQueue(queueName string, v any) error {
+	body, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return r.ch.PublishWithContext(context.Background(), "", queueName, false, false, amqp.Publishing{
 		ContentType: "application/json",
 		Body:        body,
 	})
@@ -43,14 +65,18 @@ type ConsumerHandler func(rk string, body []byte) error
 
 func (r *Rabbit) ConsumeTopic(queueName string, bindings []string, handler ConsumerHandler) error {
 	q, err := r.ch.QueueDeclare(queueName, true, false, false, false, nil)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	for _, rk := range bindings {
 		if err := r.ch.QueueBind(q.Name, rk, r.exchange, false, nil); err != nil {
 			return err
 		}
 	}
 	msgs, err := r.ch.Consume(q.Name, "", true, false, false, false, nil)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		for d := range msgs {
@@ -63,3 +89,26 @@ func (r *Rabbit) ConsumeTopic(queueName string, bindings []string, handler Consu
 	return nil
 }
 
+// ConsumeQueue consumes directly from a queue (no exchange/bindings)
+func (r *Rabbit) ConsumeQueue(queueName, consumerTag string, handler func(body []byte) error) error {
+	q, err := r.ch.QueueDeclare(queueName, true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+	msgs, err := r.ch.Consume(q.Name, consumerTag, false, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+	go func() {
+		for d := range msgs {
+			if err := handler(d.Body); err != nil {
+				log.Printf("[rabbit] queue handler error q=%s: %v", q.Name, err)
+				_ = d.Nack(false, true)
+				continue
+			}
+			_ = d.Ack(false)
+		}
+		log.Printf("[rabbit] consumer queue %s stopped", q.Name)
+	}()
+	return nil
+}

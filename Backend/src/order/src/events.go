@@ -1,19 +1,42 @@
 package main
 
-// Eventos enviados por Order a otros servicios
+// Topic routing keys (exchange-based)
 const (
-	RKOrderCreated        = "order.created"
-	RKPaymentCharge       = "payment.charge" // publicado por Order cuando inventario confirma
+	RKOrderCreated           = "order.created"
+	RKPaymentChargeRequested = "payment.charge.requested" // published by Order when inventory reserves OK
+	RKPaymentSucceeded       = "payment.succeeded"
+	RKPaymentFailed          = "payment.failed"
 )
 
-// Eventos recibidos por Order
-const (
-	RKInventoryReserved   = "inventory.reserved"
-	RKInventoryRejected   = "inventory.rejected"
-	RKPaymentCaptured     = "payment.captured"
-	RKPaymentFailed       = "payment.failed"
-)
+// Direct-queue message shapes to interact with Inventory service
+type InvOrderItem struct {
+	BookID int64 `json:"book_id"`
+	Qty    int32 `json:"qty"`
+}
 
+type InvReserveRequest struct {
+	OrderID int64          `json:"order_id"`
+	UserID  int64          `json:"user_id"`
+	Items   []InvOrderItem `json:"items"`
+}
+
+type InvReserveResult struct {
+	OrderID int64  `json:"order_id"`
+	State   string `json:"state"` // "RESERVED" | "FAILED"
+	Reason  string `json:"reason,omitempty"`
+}
+
+type InvConfirmRequest struct {
+	OrderID int64          `json:"order_id"`
+	Items   []InvOrderItem `json:"items"`
+}
+
+type InvReleaseRequest struct {
+	OrderID int64          `json:"order_id"`
+	Items   []InvOrderItem `json:"items"`
+}
+
+// Topic exchange payloads for Order ↔ Payment
 type OrderCreatedPayload struct {
 	OrderID    int64          `json:"order_id"`
 	UserID     int64          `json:"user_id"`
@@ -29,21 +52,19 @@ type OrderItemEvt struct {
 	LineCents int64  `json:"line_cents"`
 }
 
-type InventoryResultPayload struct {
-	OrderID int64  `json:"order_id"`
-	OK      bool   `json:"ok"`
-	Reason  string `json:"reason,omitempty"`
+type PaymentRequested struct {
+	OrderID     int64 `json:"order_id"`
+	UserID      int64 `json:"user_id"`
+	AmountCents int64 `json:"amount_cents"`
 }
 
-type PaymentChargePayload struct {
-	OrderID    int64  `json:"order_id"`
-	UserID     int64  `json:"user_id"`
-	TotalCents int64  `json:"total_cents"`
+type PaymentSucceeded struct {
+	OrderID     int64  `json:"order_id"`
+	ProviderRef string `json:"provider_ref"`
 }
 
-type PaymentResultPayload struct {
-	OrderID int64  `json:"order_id"`
-	OK      bool   `json:"ok"`
-	Reason  string `json:"reason,omitempty"`
+type PaymentFailed struct {
+	OrderID     int64  `json:"order_id"`
+	Reason      string `json:"reason"`
+	ProviderRef string `json:"provider_ref"`
 }
-

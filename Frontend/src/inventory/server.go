@@ -31,6 +31,8 @@ func main() {
 
 	// API endpoint (server-side calls inventory gRPC)
 	mux.HandleFunc("/api/inventory", handleAPIInventory)
+	// Also handle prefixed path when ingress doesn't rewrite
+	mux.HandleFunc("/inventory/api/inventory", handleAPIInventory)
 
 	// Frontend
 	mux.HandleFunc("/", handleInventoryPage)

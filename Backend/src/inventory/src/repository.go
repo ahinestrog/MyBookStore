@@ -59,11 +59,9 @@ VALUES(?,?,?,strftime('%s','now'))
 ON CONFLICT(book_id) DO UPDATE SET total_qty=excluded.total_qty, reserved_qty=excluded.reserved_qty, updated_at=strftime('%s','now');
 `
 	inserts := [][]any{
-		{1, 10, 0},
-		{2, 10, 0},
-		{3, 10, 0},
-		{4, 10, 0},
-		{5, 10, 0},
+		{1, 10, 0}, {2, 10, 0}, {3, 10, 0}, {4, 10, 0}, {5, 10, 0},
+		{6, 10, 0}, {7, 10, 0}, {8, 10, 0}, {9, 10, 0}, {10, 10, 0},
+		{11, 10, 0}, {12, 10, 0},
 	}
 	for _, v := range inserts {
 		if _, err := tx.ExecContext(ctx, stmt, v...); err != nil {

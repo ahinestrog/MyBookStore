@@ -37,11 +37,16 @@ data:
   ORDER_EVENTS_EXCHANGE: "mybookstore.events"
   RABBIT_URL: "amqp://guest:guest@rabbitmq:5672/"
   RABBIT_EXCHANGE: "mybookstore.events"
+  EVENTS_EXCHANGE: "mybookstore.events"
   ORDER_CONSUMER_TAG: "order-service"
   ORDER_PREFETCH_COUNT: "10"
   FRONTEND_ORDER_PORT: "8083"
   FRONTEND_ADDR: ":8083"
   ORDER_SVC_ADDR: "order:50054"
+  Q_INVENTORY_RESERVE_REQUEST: "inventory.reserve.request"
+  Q_INVENTORY_RESERVE_RESULT: "inventory.reserve.result"
+  Q_INVENTORY_CONFIRM_REQUEST: "inventory.confirm.request"
+  Q_INVENTORY_RELEASE_REQUEST: "inventory.release.request"
   
   # Inventory Service
   INVENTORY_GRPC_PORT: "50052"
