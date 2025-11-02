@@ -18,10 +18,8 @@ import (
 	paymentpb "github.com/ahinestrog/mybookstore/proto/gen/payment"
 )
 
-//go:embed templates/*.html
 var tplFS embed.FS
 
-//go:embed static/*
 var staticFS embed.FS
 
 type app struct {
@@ -89,18 +87,12 @@ func (a *app) dialPayment() (*grpc.ClientConn, paymentpb.PaymentClient, error) {
 // Función render que ejecuta el layout y las plantillas
 func render(w http.ResponseWriter, tpls *template.Template, layout, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// Execute the layout template so that defined blocks (e.g. content/title)
-	// inside other files (index.html/status.html) are rendered within the layout.
-	// Previously this executed the inner 'name' template which only contained
-	// definitions and produced an empty response.
 	if err := tpls.ExecuteTemplate(w, layout, data); err != nil {
-		// Log the error server-side and return an informative 500 body for quicker debugging
 		log.Printf("template execute error: %v (layout=%s name=%s)", err, layout, name)
 		http.Error(w, fmt.Sprintf("error renderizando %s: %v", name, err), http.StatusInternalServerError)
 	}
 }
 
-// GET /
 func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -113,7 +105,6 @@ func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
 	render(w, a.tpls, "layout.html", "index.html", data)
 }
 
-// POST /create
 func (a *app) handleCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -143,7 +134,6 @@ func (a *app) handleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Adaptamos respuesta para la tabla
 	type row struct {
 		Title      string
 		Qty        int32
@@ -169,7 +159,6 @@ func (a *app) handleCreate(w http.ResponseWriter, r *http.Request) {
 	render(w, a.tpls, "layout.html", "index.html", data)
 }
 
-// GET /status
 func (a *app) handleStatus(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("id")
 	data := map[string]any{"QueryOrderID": q, "LoggedIn": cookieUID(r) != 0, "UserName": cookieUName(r)}
@@ -208,17 +197,14 @@ func (a *app) handleStatus(w http.ResponseWriter, r *http.Request) {
 	data["Total"] = centsToStr(resp.GetTotal().GetCents())
 	data["UpdatedUnix"] = resp.GetUpdatedUnix()
 
-	// Check if this is a newly created order (coming from checkout)
-	// If the order status is CREATED and there's no 'from' query param, assume it's just created
 	if resp.GetStatus() == orderpb.OrderStatus_ORDER_STATUS_CREATED && r.URL.Query().Get("from") == "" {
 		data["JustCreated"] = true
 	}
 
-	// Get payment status
+	// Obtner el estado del pago
 	pcc, pclient, err := a.dialPayment()
 	if err != nil {
 		log.Printf("[order] failed to dial payment service: %v", err)
-		// Continue without payment info
 	} else {
 		defer pcc.Close()
 		pctx, pcancel := timeoutCtx(r.Context(), 3*time.Second)
@@ -290,7 +276,6 @@ func getEnv(k, def string) string {
 	return def
 }
 
-// --- login helpers ---
 func cookieUID(r *http.Request) int64 {
 	if c, err := r.Cookie("uid"); err == nil {
 		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {

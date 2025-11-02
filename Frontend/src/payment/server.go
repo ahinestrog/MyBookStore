@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Config
 
 type Config struct {
 	Port            string // HTTP del frontend de payment
@@ -116,13 +115,11 @@ func NewServer(cfg Config) (*Server, error) {
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	// estáticos en /static/... y compatibilidad con /payment/static/... (para subdominio y prefijo)
 	fs := http.FileServer(http.Dir("static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.Handle("/payment/static/", http.StripPrefix("/payment/static/", fs))
 
 	mux.HandleFunc("/", s.handleHome)
-	// Soporta ambos paths: con prefijo (cuando se accede vía mybookstore.local/payment/...) y sin prefijo (cuando se usa subdominio)
 	mux.HandleFunc("/payment/status", s.handlePaymentStatus)
 	mux.HandleFunc("/status", s.handlePaymentStatus)
 
@@ -130,7 +127,6 @@ func (s *Server) routes() http.Handler {
 }
 
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
-	// Redirigimos al path con prefijo para que el Ingress pueda enrutar correctamente bajo mybookstore.local/payment
 	http.Redirect(w, r, "/payment/status", http.StatusFound)
 }
 
@@ -203,7 +199,6 @@ func main() {
 	}
 }
 
-// --- login helpers ---
 func cookieUID(r *http.Request) int64 {
 	if c, err := r.Cookie("uid"); err == nil {
 		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {

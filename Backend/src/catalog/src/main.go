@@ -44,7 +44,6 @@ func main() {
 	port := getenv("GRPC_PORT", defaultPort)
 	dbPath := getenv("CATALOG_DB_PATH", defaultDBPath)
 
-	// DB + migración + seed opcional
 	db, err := openSQLite(dbPath)
 	if err != nil {
 		log.Fatalf("open db: %v", err)

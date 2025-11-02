@@ -1,14 +1,12 @@
 package main
 
-// Topic routing keys (exchange-based)
 const (
 	RKOrderCreated           = "order.created"
-	RKPaymentChargeRequested = "payment.charge.requested" // published by Order when inventory reserves OK
+	RKPaymentChargeRequested = "payment.charge.requested"
 	RKPaymentSucceeded       = "payment.succeeded"
 	RKPaymentFailed          = "payment.failed"
 )
 
-// Direct-queue message shapes to interact with Inventory service
 type InvOrderItem struct {
 	BookID int64 `json:"book_id"`
 	Qty    int32 `json:"qty"`
@@ -36,7 +34,7 @@ type InvReleaseRequest struct {
 	Items   []InvOrderItem `json:"items"`
 }
 
-// Topic exchange payloads for Order ↔ Payment
+
 type OrderCreatedPayload struct {
 	OrderID    int64          `json:"order_id"`
 	UserID     int64          `json:"user_id"`

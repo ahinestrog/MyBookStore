@@ -29,7 +29,6 @@ func main() {
 	// Worker de pagos (consume peticiones de cobro)
 	must(struct{}{}, br.consumePaymentRequested(ctx, svc.handlePaymentRequested, cfg.ConsumerTag, cfg.PrefetchCount))
 
-	// gRPC server
 	lis := must(net.Listen("tcp", ":"+cfg.ServicePort))
 	grpcServer := grpc.NewServer()
 	svc.register(grpcServer)

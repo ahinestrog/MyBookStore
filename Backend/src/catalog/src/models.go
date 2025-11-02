@@ -14,8 +14,6 @@ type Book struct {
 	CreatedUnix int64
 }
 
-// ---- mapping entidad <-> protobuf ----
-
 func bookToPB(b *Book) *catalogpb.Book {
 	return &catalogpb.Book{
 		Id:         b.ID,

@@ -2,7 +2,6 @@ package main
 
 import "time"
 
-// Estados presentes con la firma del order.proto
 const (
 	OrderStatusUnspecified = 0
 	OrderStatusCreated     = 1

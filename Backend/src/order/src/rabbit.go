@@ -49,7 +49,6 @@ func (r *Rabbit) PublishJSON(routingKey string, v any) error {
 	})
 }
 
-// PublishJSONToQueue publishes to a direct queue (default exchange "")
 func (r *Rabbit) PublishJSONToQueue(queueName string, v any) error {
 	body, err := json.Marshal(v)
 	if err != nil {

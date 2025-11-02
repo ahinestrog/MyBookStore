@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/streadway/amqp"
@@ -146,14 +145,4 @@ func (r *Rabbit) consumeRelease(ctx context.Context) error {
 		}
 	}()
 	return nil
-}
-
-// retry para reintentos de publicar, en caso de que se necesite
-func retry(n int, sleep time.Duration, fn func() error) error {
-	var err error
-	for i := 0; i < n; i++ {
-		if err = fn(); err == nil { return nil }
-		time.Sleep(sleep)
-	}
-	return err
 }

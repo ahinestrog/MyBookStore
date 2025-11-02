@@ -38,7 +38,6 @@ class UserRepository:
     def create(self, user: User) -> int:
         db = self._get_db()
         try:
-            # Set timestamps
             now = datetime.utcnow()
             user.created_at = now
             user.updated_at = now

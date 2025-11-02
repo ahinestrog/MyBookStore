@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "modernc.org/sqlite" // driver 100% Go
+	_ "modernc.org/sqlite"
 )
 
 type Repository struct {

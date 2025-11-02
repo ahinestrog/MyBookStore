@@ -18,10 +18,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-//go:embed templates/*.html
 var templatesFS embed.FS
 
-//go:embed static/*
 var staticFS embed.FS
 
 type Server struct {
@@ -35,7 +33,6 @@ func main() {
 	addr := getenv("FRONTEND_CATALOG_ADDR", ":8081")
 	grpcAddr := getenv("CATALOG_GRPC_ADDR", "localhost:50051")
 
-	// gRPC client
 	conn, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("dial catalog grpc (%s): %v", grpcAddr, err)
@@ -43,8 +40,6 @@ func main() {
 	defer conn.Close()
 	client := catalogpb.NewCatalogClient(conn)
 
-	// Inventory gRPC (for availability on book page)
-	// Prefer INVENTORY_SERVICE_ADDR over INVENTORY_GRPC_ADDR
 	invAddr := os.Getenv("INVENTORY_SERVICE_ADDR")
 	if invAddr == "" {
 		invAddr = getenv("INVENTORY_GRPC_ADDR", "inventory:50052")
@@ -126,23 +121,19 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]listItem, 0, len(resp.GetItems()))
 	for _, it := range resp.GetItems() {
-		// Some older proto objects may have nil Price; guard against nil
 		priceCents := int64(0)
 		if it.GetPrice() != nil {
 			priceCents = it.GetPrice().GetCents()
 		}
-		// determine cover url: prefer embedded /static/... if present, else fallback to placeholder
 		cover := it.GetCoverUrl()
 		finalCover := cover
 		if cover != "" {
 			if cover[0] == '/' {
-				// check if embedded static contains the file under "static" + cover
 				tryPath := "static" + cover
 				if f, err := staticFS.Open(tryPath); err == nil {
 					f.Close()
 					finalCover = "static" + cover
 				} else {
-					// fallback to a remote placeholder if image not embedded
 					finalCover = "https://via.placeholder.com/200x300?text=Cover"
 				}
 			}
@@ -171,7 +162,6 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 			qs := r.URL.Query()
 			qs.Set("page", strconv.Itoa(p))
 			qs.Set("page_size", strconv.Itoa(size))
-			// Use relative URL to keep current path prefix (e.g., /catalog)
 			return "?" + qs.Encode()
 		},
 		LoggedIn: cookieUID(r) != 0,
@@ -213,7 +203,6 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 	}
 	b.CoverUrl = finalCover
 
-	// Fetch availability from inventory
 	avail := int32(-1)
 	if s.invCli != nil {
 		ictx, icancel := context.WithTimeout(ctx, 2*time.Second)
@@ -228,7 +217,6 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Query string
 		Book  *catalogpb.Book
-		// helper para formatear dinero: cents → "12.345,67" o "12,345.67" según preferencia
 		FormatCOP func(int64) string
 		LoggedIn  bool
 		UserName  string
@@ -237,7 +225,6 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 		Query: r.URL.Query().Get("q"),
 		Book:  b,
 		FormatCOP: func(cents int64) string {
-			// muy simple: pesos enteros
 			pesos := cents / 100
 			return "$ " + formatThousands(pesos)
 		},
@@ -252,7 +239,6 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// --- utils ---
 
 func getenv(k, d string) string {
 	if v := os.Getenv(k); v != "" {
@@ -308,7 +294,7 @@ func formatThousands(n int64) string {
 	return out
 }
 
-// --- login helpers ---
+// login helpers
 func cookieUID(r *http.Request) int64 {
 	if c, err := r.Cookie("uid"); err == nil {
 		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {

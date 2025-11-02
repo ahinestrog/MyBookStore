@@ -52,7 +52,6 @@ func main() {
 	grpcSrv := grpc.NewServer()
 	inventorypb.RegisterInventoryServer(grpcSrv, &InventoryServer{Repo: repo})
 
-	// Señales para apagado limpio
 	go func() {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)

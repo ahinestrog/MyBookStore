@@ -24,14 +24,12 @@ type StockItem struct {
 func main() {
 	mux := http.NewServeMux()
 
-	// estáticos con y sin prefijo /inventory
 	fs := http.FileServer(http.Dir("static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.Handle("/inventory/static/", http.StripPrefix("/inventory/static/", fs))
 
-	// API endpoint (server-side calls inventory gRPC)
+	// API endpoint
 	mux.HandleFunc("/api/inventory", handleAPIInventory)
-	// Also handle prefixed path when ingress doesn't rewrite
 	mux.HandleFunc("/inventory/api/inventory", handleAPIInventory)
 
 	// Frontend
@@ -52,7 +50,6 @@ func getenv(k, d string) string {
 }
 
 func invClient(ctx context.Context) (inventorypb.InventoryClient, *grpc.ClientConn, error) {
-	// Prefer INVENTORY_SERVICE_ADDR over INVENTORY_GRPC_ADDR
 	target := os.Getenv("INVENTORY_SERVICE_ADDR")
 	if target == "" {
 		target = getenv("INVENTORY_GRPC_ADDR", "inventory:50052")
@@ -122,7 +119,6 @@ func handleAPIInventory(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"items": items})
 }
 
-// --- login helpers ---
 func cookieUID(r *http.Request) int64 {
 	if c, err := r.Cookie("uid"); err == nil {
 		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {

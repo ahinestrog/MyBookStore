@@ -15,7 +15,7 @@ type fakeProvider struct{}
 
 func newFakeProvider() PaymentProvider { return &fakeProvider{} }
 
-// Regla determinística simple para pruebas (evita flakes):
+// Regla simple para pruebas:
 // - Si orderID es PAR ⇒ éxito.
 // - Si es IMPAR ⇒ 80% éxito y 20% falla por fondos insuficientes.
 func (f *fakeProvider) Charge(ctx context.Context, orderID, amountCents int64) (bool, string, string) {

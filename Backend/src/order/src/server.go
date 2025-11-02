@@ -68,7 +68,7 @@ func (s *OrderServer) CreateOrder(ctx context.Context, req *orderpb.CreateOrderR
 		return nil, err
 	}
 
-	// 3) Publicar evento order.created (topic exchange)
+	// 3) Publicar evento order.created
 	payload := OrderCreatedPayload{
 		OrderID:    oid,
 		UserID:     o.UserID,
@@ -142,11 +142,11 @@ func orderStatusToPB(st int32) orderpb.OrderStatus {
 // Consumidores de RabbitMQ
 
 func (s *OrderServer) StartConsumers() error {
-	// 1) Consumir resultados de inventario desde la cola directa (reserve.result)
+	// 1) Consumir resultados de inventario desde la cola directa
 	if err := s.rabbit.ConsumeQueue(s.cfg.QReserveRes, "order-inventory-results", s.handleInventoryResult); err != nil {
 		return err
 	}
-	// 2) Consumir eventos de pago por tópico (exchange)
+	// 2) Consumir eventos de pago
 	return s.rabbit.ConsumeTopic("order-service", []string{RKPaymentSucceeded, RKPaymentFailed}, s.handleEvent)
 }
 
@@ -193,7 +193,6 @@ func (s *OrderServer) handleEvent(rk string, body []byte) error {
 	return nil
 }
 
-// handleInventoryResult consumes results from inventory.reserve.result queue
 func (s *OrderServer) handleInventoryResult(body []byte) error {
 	var res InvReserveResult
 	if err := json.Unmarshal(body, &res); err != nil {

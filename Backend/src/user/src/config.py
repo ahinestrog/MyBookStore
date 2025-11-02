@@ -10,7 +10,6 @@ class Config:
         self.rabbit_url: str = self._env("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
         self.service_env: str = self._env("SERVICE_ENV", "dev")
         
-        # Log the loaded configuration
         logging.info(f"[user] config loaded: {self.__dict__}")
     
     def _env(self, key: str, default: str) -> str:

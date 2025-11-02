@@ -31,7 +31,7 @@ func (s *service) handlePaymentRequested(ctx context.Context, body []byte) error
 	var msg PaymentRequested
 	if err := json.Unmarshal(body, &msg); err != nil {
 		log.Printf("[payment] invalid message: %v", err)
-		return nil // NACK infinito no sirve; descartamos.
+		return nil 
 	}
 
 	if err := s.repo.UpsertPending(ctx, Payment{

@@ -45,7 +45,6 @@ func (b *broker) consumePaymentRequested(ctx context.Context, handler func(conte
 	if err != nil {
 		return err
 	}
-	// Bind a topic key; puedes publicar con routing key "payment.charge.requested"
 	if err := b.ch.QueueBind(q.Name, "payment.charge.requested", b.cfg.ExchangeName, false, nil); err != nil {
 		return err
 	}

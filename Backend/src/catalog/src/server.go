@@ -23,7 +23,6 @@ type CatalogServer struct {
 func NewCatalogServer(repo Repository) *CatalogServer { return &CatalogServer{repo: repo} }
 
 func (s *CatalogServer) ListBooks(ctx context.Context, in *catalogpb.ListBooksRequest) (*catalogpb.ListBooksResponse, error) {
-	// Normaliza paginación
 	page := int32(1)
 	size := defaultPageSize
 	if in.GetPage() != nil {

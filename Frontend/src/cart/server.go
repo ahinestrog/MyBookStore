@@ -40,7 +40,6 @@ func main() {
 	grpcTarget := mustEnv("CART_GRPC_TARGET", "localhost:50051")
 	orderAddr := mustEnv("ORDER_GRPC_TARGET", "localhost:50054")
 
-	// Prefer INVENTORY_SERVICE_ADDR, fallback to INVENTORY_GRPC_TARGET
 	invAddr := os.Getenv("INVENTORY_SERVICE_ADDR")
 	if invAddr == "" {
 		invAddr = mustEnv("INVENTORY_GRPC_TARGET", "inventory:50052")
@@ -94,7 +93,6 @@ func (s *Server) ctx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 5*time.Second)
 }
 
-// Para demo, fijamos el usuario. En producción, vendría de sesión/autenticación.
 func (s *Server) userID(r *http.Request) int64 {
 	if c, err := r.Cookie("uid"); err == nil {
 		if id, err2 := strconv.ParseInt(c.Value, 10, 64); err2 == nil {
@@ -112,16 +110,12 @@ func (s *Server) userName(r *http.Request) string {
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	// Serve the cart view at the root so that accessing /cart/ (rewritten to /)
-	// shows the current cart. This is necessary when the Ingress rewrites
-	// prefixed paths (e.g. /cart/) to / on the backend.
 	s.handleCart(w, r)
 }
 
 type MoneyView struct{ Cents int64 }
 
 func (m MoneyView) String() string {
-	// Muestra centavos como entero simple para mantener todo en cents en el demo
 	return strconv.FormatInt(m.Cents, 10)
 }
 
@@ -234,7 +228,7 @@ func (s *Server) handleRemoveLine(w http.ResponseWriter, r *http.Request) {
 	cv, err := s.client.RemoveItem(ctx, &cartpb.RemoveItemRequest{
 		UserId: s.userID(r),
 		BookId: bookID,
-		Qty:    0, // regla de tu proto: 0 u omitido elimina la línea
+		Qty:    0,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -262,7 +256,7 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Require login
+	// Requiere login
 	uid := s.userID(r)
 	if uid == 0 {
 		http.Redirect(w, r, "/user/login?from=/cart/", http.StatusSeeOther)
@@ -272,8 +266,7 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := s.ctx()
 	defer cancel()
 
-	// Validate inventory before creating order
-	// Fetch current cart to get items and quantities
+	// Validar el inventario antes de crear una orden
 	cv, err := s.client.GetCart(ctx, &commonpb.UserRef{UserId: uid})
 	if err != nil {
 		log.Printf("[checkout] GetCart failed: %v", err)
@@ -284,7 +277,6 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/cart/?msg=Carrito%20vac%C3%ADo", http.StatusSeeOther)
 		return
 	}
-	// Build list of IDs
 	ids := make([]int64, 0, len(cv.GetItems()))
 	qtyByID := make(map[int64]int32, len(cv.GetItems()))
 	titleByID := make(map[int64]string, len(cv.GetItems()))
@@ -293,7 +285,6 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		qtyByID[it.GetBookId()] = it.GetQty()
 		titleByID[it.GetBookId()] = it.GetTitle()
 	}
-	// Query inventory availability
 	invResp, err := s.invClient.GetAvailability(ctx, &inventorypb.GetAvailabilityRequest{BookIds: ids})
 	if err != nil {
 		log.Printf("[checkout] inventory GetAvailability failed: %v", err)
@@ -304,7 +295,6 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 	for _, it := range invResp.GetItems() {
 		avail[it.GetBookId()] = it.GetAvailableQty()
 	}
-	// Check each item
 	for id, need := range qtyByID {
 		have := avail[id]
 		if have < need {
@@ -315,7 +305,7 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 1. Create order via order service (inventory prevalidated)
+	// 1. Crear la orden via el servicio de la orden
 	resp, err := s.orderClient.CreateOrder(ctx, &orderpb.CreateOrderRequest{UserId: uid})
 	if err != nil {
 		log.Printf("[checkout] CreateOrder failed: %v", err)
@@ -323,21 +313,17 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Clear cart after successful order creation
+	// 2. Limpiar el carro tras crear una orden, es decir, que el usuario la "compro"
 	if _, err := s.client.ClearCart(ctx, &commonpb.UserRef{UserId: uid}); err != nil {
 		log.Printf("[checkout] ClearCart failed (order already created): %v", err)
-		// Don't fail checkout if cart clear fails
 	}
 
-	// 3. Redirect to order status page (PRG pattern)
 	orderID := resp.GetOrderId()
 	log.Printf("[checkout] Order created successfully: order_id=%d, user_id=%d, total=%d",
 		orderID, uid, resp.GetTotal().GetCents())
 	http.Redirect(w, r, fmt.Sprintf("/order/status?id=%d", orderID), http.StatusSeeOther)
 }
 
-// renderCart ejecuta el layout principal para que los bloques definidos en cart.html se inserten
-// y adapta los datos al shape que esperan las plantillas (Cart, Msg y helper FormatCOP).
 func (s *Server) renderCart(w http.ResponseWriter, cv *cartpb.CartView, msg string, loggedIn bool, userName string) {
 	vm := toVM(cv, msg)
 	data := struct {
@@ -355,7 +341,6 @@ func (s *Server) renderCart(w http.ResponseWriter, cv *cartpb.CartView, msg stri
 		Msg:   vm.Msg,
 		FormatCOP: func(cents int64) string {
 			pesos := cents / 100
-			// formato sencillo con separadores de miles
 			s := strconv.FormatInt(pesos, 10)
 			out := ""
 			for i, r := range s {
@@ -371,7 +356,6 @@ func (s *Server) renderCart(w http.ResponseWriter, cv *cartpb.CartView, msg stri
 		LoggedIn: loggedIn,
 		UserName: userName,
 	}
-	// Parse only layout and cart templates to ensure the cart content block is the one used
 	tpl, err := template.ParseFiles("./templates/layout.html", "./templates/cart.html")
 	if err != nil {
 		log.Printf("template parse error: %v", err)

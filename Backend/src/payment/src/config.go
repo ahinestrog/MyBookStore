@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	ServicePort   string // gRPC
+	ServicePort   string
 	DBPath        string
 	RabbitURL     string
 	ExchangeName  string

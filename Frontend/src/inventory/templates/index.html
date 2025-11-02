@@ -108,7 +108,6 @@
         return s === "ok" ? "En stock" : s === "low" ? "Pocas unidades" : "Agotado";
       }
 
-      // Auto-disparar consulta si viene con ?ids= en la URL
       const url = new URL(window.location.href);
       const pre = url.searchParams.get("ids");
       if (pre && pre.trim() !== "") {
