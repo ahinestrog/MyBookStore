@@ -6,31 +6,33 @@ metadata:
   region: us-east-1
   version: "1.28"
 
-# Nodos
-nodeGroups:
-  - name: mybookstore-nodes
-    instanceType: t3.medium
-    desiredCapacity: 2
-    minSize: 2
-    maxSize: 4
-    volumeSize: 20
-    ssh:
-      allow: false
-    iam:
-      withAddonPolicies:
-        imageBuilder: true
-        autoScaler: true
-        externalDNS: true
-        certManager: true
-        appMesh: true
-        ebs: true
-        fsx: true
-        efs: true
-        albIngress: true
-        cloudWatch: true
+availabilityZones: ["us-east-1a","us-east-1b","us-east-1c"]
 
-# Configuración de red
+kubernetesNetworkConfig:
+  ipFamily: IPv4
+iam:
+  withOIDC: true
+
 vpc:
   cidr: 10.0.0.0/16
   nat:
     gateway: Single
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: true
+
+managedNodeGroups:
+  - name: mybookstore-nodes
+    instanceType: t3.small
+    desiredCapacity: 3        
+    minSize: 0                
+    maxSize: 10
+    privateNetworking: false  # nodos en subred pública con ExternalIP (para NodePort)
+    volumeSize: 20
+    labels:
+      role: app
+    ssh:
+      allow: false
+    tags:
+      alpha.eksctl.io/cluster-name: mybookstore-cluster
+      alpha.eksctl.io/nodegroup-name: mybookstore-nodes

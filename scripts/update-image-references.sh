@@ -34,12 +34,12 @@ update_deployment "k8s/04-backends/payment-deployment.yaml" "mybookstore-payment
 # Frontends
 echo ""
 echo "=== FRONTENDS ==="
-update_deployment "k8s/05-frontends/user-deployment.yaml" "mybookstore-user-frontend"
-update_deployment "k8s/05-frontends/catalog-deployment.yaml" "mybookstore-catalog-frontend"
-update_deployment "k8s/05-frontends/cart-deployment.yaml" "mybookstore-cart-frontend"
-update_deployment "k8s/05-frontends/inventory-deployment.yaml" "mybookstore-inventory-frontend"
-update_deployment "k8s/05-frontends/order-deployment.yaml" "mybookstore-order-frontend"
-update_deployment "k8s/05-frontends/payment-deployment.yaml" "mybookstore-payment-frontend"
+update_deployment "k8s/05-frontends/frontend-user-deployment.yaml" "mybookstore-user-frontend"
+update_deployment "k8s/05-frontends/frontend-catalog-deployment.yaml" "mybookstore-catalog-frontend"
+update_deployment "k8s/05-frontends/frontend-cart-deployment.yaml" "mybookstore-cart-frontend"
+update_deployment "k8s/05-frontends/frontend-inventory-deployment.yaml" "mybookstore-inventory-frontend"
+update_deployment "k8s/05-frontends/frontend-order-deployment.yaml" "mybookstore-order-frontend"
+update_deployment "k8s/05-frontends/frontend-payment-deployment.yaml" "mybookstore-payment-frontend"
 
 echo ""
 echo "🎉 ¡Referencias de imágenes actualizadas!"

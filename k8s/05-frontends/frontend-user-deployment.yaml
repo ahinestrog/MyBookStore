@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: frontend-user
-        image: mybookstore-user-frontend:latest
+        image: 739908761444.dkr.ecr.us-east-1.amazonaws.com/mybookstore-user-frontend:latest
         ports:
         - containerPort: 8080
           name: http

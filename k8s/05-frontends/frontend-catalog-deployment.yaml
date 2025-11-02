@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: frontend-catalog
-        image: mybookstore-catalog-frontend:latest
+        image: 739908761444.dkr.ecr.us-east-1.amazonaws.com/mybookstore-catalog-frontend:latest
         ports:
         - containerPort: 8081
           name: http

@@ -18,8 +18,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// Embed HTML templates and static assets into the binary so runtime doesn't depend on filesystem layout
+//
+//go:embed templates/*.html
 var templatesFS embed.FS
 
+//go:embed static/**
 var staticFS embed.FS
 
 type Server struct {
@@ -58,9 +62,27 @@ func main() {
 		"year":  func() int { return time.Now().Year() },
 	}
 
-	tplLayout := template.Must(template.New("layout.html").Funcs(funcs).ParseFS(templatesFS, "templates/layout.html"))
-	tplList := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/index.html"))
-	tplBook := template.Must(template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/book.html"))
+	// Load templates: try embed first, then filesystem fallback (useful in minimal containers)
+	tplLayout, err := template.New("layout.html").Funcs(funcs).ParseFS(templatesFS, "templates/layout.html")
+	if err != nil {
+		log.Printf("templates from embed not found, fallback to disk: %v", err)
+		if tplLayout, err = template.New("layout.html").Funcs(funcs).ParseFiles("templates/layout.html"); err != nil {
+			log.Fatalf("failed to load templates: %v", err)
+		}
+	}
+
+	tplList, err := template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/index.html")
+	if err != nil {
+		if tplList, err = template.Must(tplLayout.Clone()).ParseFiles("templates/index.html"); err != nil {
+			log.Fatalf("failed to load index template: %v", err)
+		}
+	}
+	tplBook, err := template.Must(tplLayout.Clone()).ParseFS(templatesFS, "templates/book.html")
+	if err != nil {
+		if tplBook, err = template.Must(tplLayout.Clone()).ParseFiles("templates/book.html"); err != nil {
+			log.Fatalf("failed to load book template: %v", err)
+		}
+	}
 
 	s := &Server{tplList: tplList, tplBook: tplBook, client: client, invCli: invClient}
 
@@ -68,8 +90,8 @@ func main() {
 	mux.HandleFunc("/", s.handleIndex)
 	mux.HandleFunc("/book", s.handleBook)
 
-	// static
-	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
+	// static (serve from filesystem fallback so templates/static don't depend on embed)
+	mux.Handle("/static/", http.FileServer(http.Dir(".")))
 
 	log.Printf("Catalog Frontend listening on %s (Catalog gRPC → %s, Inventory gRPC → %s)", addr, grpcAddr, invAddr)
 	if err := http.ListenAndServe(addr, withLog(mux)); err != nil {
@@ -215,8 +237,8 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Query string
-		Book  *catalogpb.Book
+		Query     string
+		Book      *catalogpb.Book
 		FormatCOP func(int64) string
 		LoggedIn  bool
 		UserName  string
@@ -238,7 +260,6 @@ func (s *Server) handleBook(w http.ResponseWriter, r *http.Request) {
 		httpError(w, "Error renderizando página", http.StatusInternalServerError)
 	}
 }
-
 
 func getenv(k, d string) string {
 	if v := os.Getenv(k); v != "" {

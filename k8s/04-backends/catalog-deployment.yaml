@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: catalog
-        image: mybookstore-catalog-backend:latest
+        image: 739908761444.dkr.ecr.us-east-1.amazonaws.com/mybookstore-catalog-backend:latest
         ports:
         - containerPort: 50051
           name: grpc

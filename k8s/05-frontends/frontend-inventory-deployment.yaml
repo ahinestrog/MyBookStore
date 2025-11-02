@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: frontend-inventory
-        image: mybookstore-inventory-frontend:latest
+        image: 739908761444.dkr.ecr.us-east-1.amazonaws.com/mybookstore-inventory-frontend:latest
         ports:
         - containerPort: 8082
           name: http

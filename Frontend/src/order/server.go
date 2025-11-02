@@ -18,8 +18,12 @@ import (
 	paymentpb "github.com/ahinestrog/mybookstore/proto/gen/payment"
 )
 
+// Embed HTML templates and static assets
+//
+//go:embed templates/*.html
 var tplFS embed.FS
 
+//go:embed static/**
 var staticFS embed.FS
 
 type app struct {
@@ -39,8 +43,8 @@ func main() {
 	a.loadTemplates()
 	mux := http.NewServeMux()
 
-	// static
-	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
+	// static (serve from filesystem to avoid relying on embed)
+	mux.Handle("/static/", http.FileServer(http.Dir(".")))
 
 	// routes
 	mux.HandleFunc("/", a.handleIndex)
@@ -64,8 +68,16 @@ func main() {
 }
 
 func (a *app) loadTemplates() {
-	tpls := template.Must(template.ParseFS(tplFS, "templates/*.html"))
-	a.tpls = tpls
+	// Try embedded templates first; fallback to disk if not present in binary
+	if t, err := template.ParseFS(tplFS, "templates/*.html"); err == nil {
+		a.tpls = t
+		return
+	}
+	if t, err := template.ParseGlob("templates/*.html"); err == nil {
+		a.tpls = t
+		return
+	}
+	log.Fatal("no templates found (embed or filesystem)")
 }
 
 func (a *app) dialOrder() (*grpc.ClientConn, orderpb.OrderClient, error) {

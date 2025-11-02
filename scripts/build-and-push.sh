@@ -11,14 +11,13 @@ build_and_push() {
   local service=$1
   local type=$2
   local dockerfile=$3
-  local context=$4
   
   echo ""
   echo "📦 Procesando: mybookstore-${service}-${type}"
   
-  # Build
+  # Build con contexto en la raíz del proyecto
   docker build -t mybookstore-${service}-${type}:latest \
-    -f ${dockerfile} ${context}
+    -f ${dockerfile} .
   
   if [ $? -ne 0 ]; then
     echo "❌ Error building mybookstore-${service}-${type}"
@@ -42,22 +41,22 @@ build_and_push() {
 
 # Backend services
 echo "=== BACKENDS ==="
-build_and_push "user" "backend" "Backend/src/user/Dockerfile" "Backend/src/user"
-build_and_push "catalog" "backend" "Backend/src/catalog/Dockerfile" "Backend/src/catalog"
-build_and_push "cart" "backend" "Backend/src/cart/Dockerfile" "Backend/src/cart"
-build_and_push "inventory" "backend" "Backend/src/inventory/Dockerfile" "Backend/src/inventory"
-build_and_push "order" "backend" "Backend/src/order/Dockerfile" "Backend/src/order"
-build_and_push "payment" "backend" "Backend/src/payment/Dockerfile" "Backend/src/payment"
+build_and_push "user" "backend" "Backend/src/user/Dockerfile"
+build_and_push "catalog" "backend" "Backend/src/catalog/Dockerfile"
+build_and_push "cart" "backend" "Backend/src/cart/Dockerfile"
+build_and_push "inventory" "backend" "Backend/src/inventory/Dockerfile"
+build_and_push "order" "backend" "Backend/src/order/Dockerfile"
+build_and_push "payment" "backend" "Backend/src/payment/Dockerfile"
 
 # Frontend services
 echo ""
 echo "=== FRONTENDS ==="
-build_and_push "user" "frontend" "Frontend/src/user/Dockerfile" "Frontend/src/user"
-build_and_push "catalog" "frontend" "Frontend/src/catalog/Dockerfile" "Frontend/src/catalog"
-build_and_push "cart" "frontend" "Frontend/src/cart/Dockerfile" "Frontend/src/cart"
-build_and_push "inventory" "frontend" "Frontend/src/inventory/Dockerfile" "Frontend/src/inventory"
-build_and_push "order" "frontend" "Frontend/src/order/Dockerfile" "Frontend/src/order"
-build_and_push "payment" "frontend" "Frontend/src/payment/Dockerfile" "Frontend/src/payment"
+build_and_push "user" "frontend" "Frontend/src/user/Dockerfile"
+build_and_push "catalog" "frontend" "Frontend/src/catalog/Dockerfile"
+build_and_push "cart" "frontend" "Frontend/src/cart/Dockerfile"
+build_and_push "inventory" "frontend" "Frontend/src/inventory/Dockerfile"
+build_and_push "order" "frontend" "Frontend/src/order/Dockerfile"
+build_and_push "payment" "frontend" "Frontend/src/payment/Dockerfile"
 
 echo ""
 echo "🎉 ¡Todas las imágenes han sido construidas y subidas a ECR!"
