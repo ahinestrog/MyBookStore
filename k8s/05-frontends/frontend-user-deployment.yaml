@@ -20,7 +20,6 @@ spec:
       containers:
       - name: frontend-user
         image: mybookstore-user-frontend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 8080
           name: http

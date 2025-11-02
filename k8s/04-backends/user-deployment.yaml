@@ -20,7 +20,6 @@ spec:
       containers:
       - name: user
         image: mybookstore-user-backend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 50055
           name: grpc

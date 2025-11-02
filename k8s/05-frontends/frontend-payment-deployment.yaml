@@ -20,7 +20,6 @@ spec:
       containers:
       - name: frontend-payment
         image: mybookstore-payment-frontend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 8084
           name: http

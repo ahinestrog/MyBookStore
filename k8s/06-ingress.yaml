@@ -1,15 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: mybookstore-ingress-prefix
+  name: mybookstore-ingress
   namespace: mybookstore
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/use-regex: "true"
+    # Para AWS EKS con ALB:
+    # kubernetes.io/ingress.class: alb
+    # alb.ingress.kubernetes.io/scheme: internet-facing
+    # alb.ingress.kubernetes.io/target-type: ip
 spec:
+  ingressClassName: nginx
   rules:
-  - host: mybookstore.local
-    http:
+  - http:
       paths:
       - path: /user(/|$)(.*)
         pathType: ImplementationSpecific
@@ -55,136 +59,6 @@ spec:
               number: 8084
       - path: /rabbitmq(/|$)(.*)
         pathType: ImplementationSpecific
-        backend:
-          service:
-            name: rabbitmq-management
-            port:
-              number: 15672
-  - host: localhost
-    http:
-      paths:
-      - path: /user(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-user
-            port:
-              number: 8080
-      - path: /catalog(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-catalog
-            port:
-              number: 8081
-      - path: /cart(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-cart
-            port:
-              number: 8085
-      - path: /inventory(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-inventory
-            port:
-              number: 8082
-      - path: /order(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-order
-            port:
-              number: 8083
-      - path: /payment(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: frontend-payment
-            port:
-              number: 8084
-      - path: /rabbitmq(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: rabbitmq-management
-            port:
-              number: 15672
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: mybookstore-ingress-subdomains
-  namespace: mybookstore
-spec:
-  rules:
-  - host: user.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-user
-            port:
-              number: 8080
-  - host: catalog.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-catalog
-            port:
-              number: 8081
-  - host: cart.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-cart
-            port:
-              number: 8085
-  - host: inventory.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-inventory
-            port:
-              number: 8082
-  - host: order.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-order
-            port:
-              number: 8083
-  - host: payment.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-payment
-            port:
-              number: 8084
-  - host: rabbitmq.mybookstore.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
         backend:
           service:
             name: rabbitmq-management

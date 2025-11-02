@@ -20,7 +20,6 @@ spec:
       containers:
       - name: inventory
         image: mybookstore-inventory-backend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 50052
           name: grpc

@@ -20,7 +20,6 @@ spec:
       containers:
       - name: cart
         image: mybookstore-cart-backend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 50050
           name: grpc

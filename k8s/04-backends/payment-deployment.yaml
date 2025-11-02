@@ -20,7 +20,6 @@ spec:
       containers:
       - name: payment
         image: mybookstore-payment-backend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 50053
           name: grpc

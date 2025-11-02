@@ -20,7 +20,6 @@ spec:
       containers:
       - name: frontend-cart
         image: mybookstore-cart-frontend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 8085
           name: http

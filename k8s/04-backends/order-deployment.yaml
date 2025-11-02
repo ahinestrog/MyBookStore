@@ -20,7 +20,6 @@ spec:
       containers:
       - name: order
         image: mybookstore-order-backend:latest
-        imagePullPolicy: Never
         ports:
         - containerPort: 50054
           name: grpc
