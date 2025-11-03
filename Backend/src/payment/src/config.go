@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"time"
 )
 
 type Config struct {
@@ -42,6 +41,4 @@ func getEnv(k, def string) string {
 	}
 	return def
 }
-
-func nowUnix() int64 { return time.Now().Unix() }
 

@@ -18,12 +18,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Embed HTML templates and static assets into the binary so runtime doesn't depend on filesystem layout
-//
-//go:embed templates/*.html
 var templatesFS embed.FS
 
-//go:embed static/**
 var staticFS embed.FS
 
 type Server struct {
@@ -62,7 +58,6 @@ func main() {
 		"year":  func() int { return time.Now().Year() },
 	}
 
-	// Load templates: try embed first, then filesystem fallback (useful in minimal containers)
 	tplLayout, err := template.New("layout.html").Funcs(funcs).ParseFS(templatesFS, "templates/layout.html")
 	if err != nil {
 		log.Printf("templates from embed not found, fallback to disk: %v", err)
@@ -90,7 +85,6 @@ func main() {
 	mux.HandleFunc("/", s.handleIndex)
 	mux.HandleFunc("/book", s.handleBook)
 
-	// static (serve from filesystem fallback so templates/static don't depend on embed)
 	mux.Handle("/static/", http.FileServer(http.Dir(".")))
 
 	log.Printf("Catalog Frontend listening on %s (Catalog gRPC → %s, Inventory gRPC → %s)", addr, grpcAddr, invAddr)

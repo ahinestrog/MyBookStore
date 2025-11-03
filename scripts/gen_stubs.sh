@@ -77,7 +77,7 @@ echo "# Order protobuf modules" > "$OUT_DIR/order/__init__.py"
 echo "# Inventory protobuf modules" > "$OUT_DIR/inventory/__init__.py"
 echo "# Payment protobuf modules" > "$OUT_DIR/payment/__init__.py"
 
-# Corregir imports en archivos Python para usar imports directos (sin módulos anidados)
+# Corregir imports en archivos Python para usar imports directos
 find "$OUT_DIR" -name "*_pb2.py" -o -name "*_pb2_grpc.py" | while read file; do
     # Revertir cualquier import complejo a imports simples
     sed -i 's/from common import common_pb2/import common_pb2/g' "$file"

@@ -4,7 +4,7 @@ metadata:
   name: mybookstore-config
   namespace: mybookstore
 data:
-  # Global Configuration
+  # Configuración global
   SERVICE_ENV: "dev"
   RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
   EVENTS_EXCHANGE: "mybookstore.events"
